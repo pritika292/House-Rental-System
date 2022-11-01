@@ -1,6 +1,6 @@
 package com.reservation.rentaplace.Domain;
 
-import com.sun.org.apache.xpath.internal.operations.Bool;
+//import com.sun.org.apache.xpath.internal.operations.Bool;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.context.annotation.Bean;

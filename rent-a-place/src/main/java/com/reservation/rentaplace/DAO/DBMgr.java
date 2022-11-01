@@ -6,6 +6,7 @@ import com.reservation.rentaplace.Domain.Reservation;
 
 public class DBMgr
 {
+    
     public Customer getCustomer(String uname)
     {
        return null;
