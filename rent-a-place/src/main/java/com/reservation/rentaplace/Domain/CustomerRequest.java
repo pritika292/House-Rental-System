@@ -8,22 +8,13 @@ import lombok.AllArgsConstructor;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class Customer
-{
+public class CustomerRequest {
     private String name;
     private String username;
     private String password;
-    
+
     private String email;
 
     private String phone_number;
-
-    private Cart cart;
-    public boolean verify(String username, String password)
-    {
-        if (username.equals(this.username) && password.equals(this.password))
-            return true;
-        return false;
-    }
 
 }
