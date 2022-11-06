@@ -1,5 +1,6 @@
 package com.reservation.rentaplace.DAO;
 import com.reservation.rentaplace.Domain.CustomerRequest;
+import com.reservation.rentaplace.mapper.CustomerRowMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import com.reservation.rentaplace.Domain.Customer;
@@ -26,7 +27,18 @@ public class DBMgr implements DBMgrDAO
     @Override
     public Customer getCustomer(String uname)
     {
-       return null;
+        String query = "select * from CUSTOMER WHERE username = ?";
+        Customer c =  null;
+        try {
+            c = jdbcTemplate.queryForObject(query, new CustomerRowMapper(), uname);
+            System.out.println("not null");
+            return c;
+        }
+        catch (Exception e)
+        {
+            System.out.println("is null");
+            return null;
+        }
     }
 
     @Override

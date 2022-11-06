@@ -6,6 +6,7 @@ import com.reservation.rentaplace.Domain.Property;
 import com.reservation.rentaplace.Domain.Login;
 import com.reservation.rentaplace.Domain.Filter;
 import com.reservation.rentaplace.Domain.Reservation;
+import com.reservation.rentaplace.Service.CustomerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.PreparedStatementCreator;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
@@ -27,14 +28,35 @@ public class Controller
 {
     @Autowired
     private DBMgr db;
+    @Autowired
+    private CustomerService service;
+
+    public Controller(DBMgr db)
+    {
+         this.db = db;
+    }
     @PostMapping("/register")
     public String save(@RequestBody CustomerRequest c) {
         int cartId = db.createCart();
         return db.save(c, cartId)+" Customer registered successfully";
     }
     @PostMapping("/login")
-    public String login(@RequestBody Login l) {
-        return null;
+    public String login(@RequestBody Login l)
+    {
+            Customer c = db.getCustomer(l.getUsername());
+            if (c != null) {
+                if (c.getPassword().equals(l.getPassword())) {
+                    return "Login successful";
+                }
+            }
+            return "Login unsuccessful";
+            //Do not delete below code
+//        if (l.getUsername() != null && l.getPassword() != null)
+//        {
+//            return service.verifyLogin(l.getUsername(), l.getPassword());
+//        }
+//        return "Login unsuccessful";
+
     }
     @GetMapping("/view/{location}/{dates}")
     public Property getProperty(@PathVariable String location , @PathVariable String[] dates) {
