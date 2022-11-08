@@ -5,23 +5,13 @@ import com.reservation.rentaplace.DAO.DBMgr;
 import com.reservation.rentaplace.Domain.Property;
 import com.reservation.rentaplace.Domain.Login;
 import com.reservation.rentaplace.Domain.Filter;
-import com.reservation.rentaplace.Domain.Reservation;
 import com.reservation.rentaplace.Service.CustomerService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.PreparedStatementCreator;
-import org.springframework.jdbc.support.GeneratedKeyHolder;
-import org.springframework.jdbc.support.KeyHolder;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 
 @RestController
 public class Controller
@@ -37,15 +27,27 @@ public class Controller
     }
     @PostMapping("/register")
     public String save(@RequestBody CustomerRequest c) {
+        if(!c.verifyUsername())
+            return "Username cannot exceed the length of 10";
+        if(!c.verifyEmail())
+            return "Invalid email id";
+        if(!c.verifyPhoneNumber())
+            return "Invalid phone number";
+
         int cartId = db.createCart();
-        return db.save(c, cartId)+" Customer registered successfully";
+        if(cartId == -1)
+            return "Error occurred";
+        if(db.save(c, cartId) == 0){
+            return "Error occurred";
+        }
+        return c.getName()+ " registered successfully";
     }
     @PostMapping("/login")
     public String login(@RequestBody Login l)
     {
             Customer c = db.getCustomer(l.getUsername());
             if (c != null) {
-                if (c.getPassword().equals(l.getPassword())) {
+                if (c.verifyPassword(l.getPassword())) {
                     return "Login successful";
                 }
             }
