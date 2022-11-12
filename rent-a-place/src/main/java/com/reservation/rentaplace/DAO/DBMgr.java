@@ -28,8 +28,7 @@ public class DBMgr implements DBMgrDAO
             System.out.println("not null");
             return c;
         }
-        catch (Exception e)
-        {
+        catch (Exception e) {
             System.out.println("is null");
             return null;
         }
@@ -59,22 +58,35 @@ public class DBMgr implements DBMgrDAO
     }
     public int createCart(){
         String insert_sql = "INSERT INTO Cart (property_ids) VALUES (?)";
-        KeyHolder keyHolder = new GeneratedKeyHolder();
-        jdbcTemplate.update(
-                new PreparedStatementCreator() {
-                    public PreparedStatement createPreparedStatement(Connection connection) throws SQLException {
-                        PreparedStatement ps =
-                                connection.prepareStatement(insert_sql, new String[] {"id"});
-                        ps.setString(1, "");
-                        return ps;
-                    }
-                },
-                keyHolder);
-        return keyHolder.getKey().intValue();
+        try{
+            KeyHolder keyHolder = new GeneratedKeyHolder();
+            jdbcTemplate.update(
+                    new PreparedStatementCreator() {
+                        public PreparedStatement createPreparedStatement(Connection connection) throws SQLException {
+                            PreparedStatement ps =
+                                    connection.prepareStatement(insert_sql, new String[] {"id"});
+                            ps.setString(1, "");
+                            return ps;
+                        }
+                    },
+                    keyHolder);
+            return keyHolder.getKey().intValue();
+        }
+        catch (Exception e){
+            System.out.println(e);
+            return -1;
+        }
     }
     @Override
     public int save(CustomerRequest c, int cartId){
-        return jdbcTemplate.update("INSERT INTO Customer (customer_name, username, password, email, phone_number, cart_id) VALUES (?, ?, ?, ?, ?, ?)", new Object[] {c.getName(), c.getUsername(), c.getPassword(), c.getEmail(), c.getPhone_number(), cartId});
+        try{
+            jdbcTemplate.update("INSERT INTO Customer (customer_name, username, password, email, phone_number, cart_id) VALUES (?, ?, ?, ?, ?, ?)", new Object[] {c.getName(), c.getUsername(), c.getPassword(), c.getEmail(), c.getPhone_number(), cartId});
+            return 1;
+        }
+        catch (Exception e) {
+            System.out.println(e);
+            return 0;
+        }
     }
     @Override
     public int save(RentalProperty p) {

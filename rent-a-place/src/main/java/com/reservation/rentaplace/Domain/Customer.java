@@ -3,6 +3,7 @@ import lombok.Setter;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import java.util.regex.Pattern;
 
 @Setter
 @Getter
@@ -67,11 +68,11 @@ public class Customer
     private String phone_number;
 
     private Cart cart;
-    public boolean verify(String username, String password)
-    {
-        if (username.equals(this.username) && password.equals(this.password))
+    public boolean verifyPassword(String password) {
+        if (password.equals(this.password))
             return true;
         return false;
     }
+
 
 }
