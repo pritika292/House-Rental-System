@@ -1,19 +1,13 @@
 package com.reservation.rentaplace.DAO;
-import com.reservation.rentaplace.Domain.CustomerRequest;
+import com.reservation.rentaplace.Domain.*;
 import com.reservation.rentaplace.mapper.CustomerRowMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
-import com.reservation.rentaplace.Domain.Customer;
-import com.reservation.rentaplace.Domain.Property;
-import com.reservation.rentaplace.Domain.Reservation;
 import org.springframework.jdbc.core.PreparedStatementCreator;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
-import org.springframework.jdbc.core.BeanPropertyRowMapper;
-import org.springframework.stereotype.Service;
 
-import javax.annotation.Resource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -83,8 +77,10 @@ public class DBMgr implements DBMgrDAO
         return jdbcTemplate.update("INSERT INTO Customer (customer_name, username, password, email, phone_number, cart_id) VALUES (?, ?, ?, ?, ?, ?)", new Object[] {c.getName(), c.getUsername(), c.getPassword(), c.getEmail(), c.getPhone_number(), cartId});
     }
     @Override
-    public int save(Property p) {
-        return 0;
+    public int save(RentalProperty p) {
+        return jdbcTemplate.update("INSERT INTO PROPERTY" +
+                " (property_name, property_type, price_per_night, num_of_bedrooms) VALUES (?, ?, ?, ?)", new Object[]{p.getProperty_name(), p.getProperty_type(),p.getPrice(), p.getNum_bedrooms()});
+
     }
     @Override
     public int create(Property p, Customer u){

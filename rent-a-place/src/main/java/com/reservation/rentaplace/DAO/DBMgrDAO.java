@@ -1,9 +1,6 @@
 package com.reservation.rentaplace.DAO;
 
-import com.reservation.rentaplace.Domain.Customer;
-import com.reservation.rentaplace.Domain.CustomerRequest;
-import com.reservation.rentaplace.Domain.Property;
-import com.reservation.rentaplace.Domain.Reservation;
+import com.reservation.rentaplace.Domain.*;
 
 public interface DBMgrDAO {
     public Customer getCustomer(String uname);
@@ -18,7 +15,7 @@ public interface DBMgrDAO {
 
     public int save(CustomerRequest c, int cartId);
 
-    public int save(Property p);
+    int save(RentalProperty p);
 
     public int create(Property p, Customer u);
 }
