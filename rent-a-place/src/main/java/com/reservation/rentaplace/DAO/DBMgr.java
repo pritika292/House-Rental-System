@@ -91,9 +91,14 @@ public class DBMgr implements DBMgrDAO
     @Override
     public int save(RentalProperty p) {
         return jdbcTemplate.update("INSERT INTO PROPERTY" +
-                " (property_name, property_type, price_per_night, num_of_bedrooms) VALUES (?, ?, ?, ?)", new Object[]{p.getProperty_name(), p.getProperty_type(),p.getPrice(), p.getNum_bedrooms()});
+                " (price_per_night, num_of_bedrooms, num_of_bathrooms, property_description, property_name, property_type," +
+                " city, pet_friendly, wifi_avail, carpet_area, avg_rating, owner_id, availability) VALUES (?, ?, ?, ?)", 
+                new Object[]{p.getPrice_per_night(), p.getNum_bedrooms(), p.getNum_baths(), p.getProperty_description(),
+                p.getProperty_name(), p.getProperty_type(), p.getCity(), p.getPet_friendly(), p.getWifi_avail(),
+                p.getCarpet_area(), p.getAverage_rating(), p.getOwner_id(), p.getAvailability()});
 
     }
+    
     @Override
     public int create(Property p, Customer u){
         return 0;
