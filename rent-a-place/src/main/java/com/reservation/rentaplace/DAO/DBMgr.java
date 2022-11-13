@@ -1,19 +1,13 @@
 package com.reservation.rentaplace.DAO;
-import com.reservation.rentaplace.Domain.CustomerRequest;
+import com.reservation.rentaplace.Domain.*;
 import com.reservation.rentaplace.mapper.CustomerRowMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
-import com.reservation.rentaplace.Domain.Customer;
-import com.reservation.rentaplace.Domain.Property;
-import com.reservation.rentaplace.Domain.Reservation;
 import org.springframework.jdbc.core.PreparedStatementCreator;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
-import org.springframework.jdbc.core.BeanPropertyRowMapper;
-import org.springframework.stereotype.Service;
 
-import javax.annotation.Resource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -95,9 +89,20 @@ public class DBMgr implements DBMgrDAO
         }
     }
     @Override
-    public int save(Property p) {
-        return 0;
+    public int save(RentalProperty p) {
+        try {
+            return jdbcTemplate.update("INSERT INTO PROPERTY (price_per_night, num_of_bedrooms, num_of_bathrooms," +
+                            " property_description, property_name, property_type, city, pet_friendly, wifi_avail, carpet_area," +
+                            " avg_rating, owner_id, availability) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    new Object[]{p.getPrice_per_night(), p.getNum_bedrooms(), p.getNum_baths(), p.getProperty_description(), 
+                            p.getProperty_name(), p.getProperty_type(), p.getCity(), p.getPet_friendly(), p.getWifi_avail(),
+                            p.getCarpet_area(), p.getAverage_rating(), p.getOwner_id(), p.getAvailability()});
+        }
+        catch (Exception e){
+            return 0;
+        }
     }
+    
     @Override
     public int create(Property p, Customer u){
         return 0;
