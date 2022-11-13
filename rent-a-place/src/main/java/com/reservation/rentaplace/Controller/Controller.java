@@ -37,6 +37,7 @@ public class Controller
         getPropertyClass.put("beachHouse", "FirstClass");
         getPropertyClass.put("resort", "FirstClass");
         getPropertyClass.put("apartment", "BusinessClass");
+        getPropertyClass.put("house", "BusinessClass");
         getPropertyClass.put("studio", "BusinessClass");
         getPropertyClass.put("motel", "EconomyClass");
     }
