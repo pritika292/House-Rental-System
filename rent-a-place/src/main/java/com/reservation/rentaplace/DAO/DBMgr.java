@@ -1,6 +1,7 @@
 package com.reservation.rentaplace.DAO;
 import com.reservation.rentaplace.Domain.*;
 import com.reservation.rentaplace.mapper.CustomerRowMapper;
+import com.reservation.rentaplace.mapper.CartRowMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementCreator;
@@ -22,30 +23,39 @@ public class DBMgr implements DBMgrDAO
     public Customer getCustomer(String uname)
     {
         String query = "select * from CUSTOMER WHERE username = ?";
-        Customer c =  null;
         try {
-            c = jdbcTemplate.queryForObject(query, new CustomerRowMapper(), uname);
-            System.out.println("not null");
+            Customer c = jdbcTemplate.queryForObject(query, new CustomerRowMapper(), uname);
+            System.out.println("User not null");
+            Cart cart = getCart(c.getUserID());
+            c.setCart(cart);
             return c;
         }
         catch (Exception e) {
-            System.out.println("is null");
+            System.out.println("User is null");
             return null;
         }
     }
 
     @Override
-    public Property getProperty(String location, String[] date)
-    {
+    public RentalProperty getProperty(String location, String[] date) {
         return null;
     }
 
     @Override
-    public Property getProperty(String property_id)
-    {
+    public RentalProperty getProperty(String propertyID, String propertyType) {
         return null;
     }
-
+    public String checkProperty(String property_id){
+        String query = "select property_type from Property WHERE property_id = ?";
+        try{
+            String property_type = (String)jdbcTemplate.queryForObject(query, String.class, property_id);
+            return property_type;
+        }
+        catch (Exception e){
+            System.out.println(e);
+            return null;
+        }
+    }
     @Override
     public Reservation getReservation(String uname, String property_id)
     {
@@ -73,6 +83,28 @@ public class DBMgr implements DBMgrDAO
             return keyHolder.getKey().intValue();
         }
         catch (Exception e){
+            System.out.println(e);
+            return -1;
+        }
+    }
+    public Cart getCart(int user_id){
+        try{
+            Cart cart = jdbcTemplate.queryForObject("SELECT * from Cart where cart_id in (SELECT cart_id from Customer where customer_id = (?))", new CartRowMapper(), user_id);
+            return cart;
+        }
+        catch (Exception e) {
+            System.out.println(e);
+            return null;
+        }
+    }
+    public int updateCart(Customer c){
+        String update_sql = "";
+        try{
+            Cart cart = c.getCart();
+            jdbcTemplate.update("UPDATE Cart SET property_ids = (?), checkin_date = (?), checkout_date = (?) WHERE cart_id = (?)", new Object[] {cart.getProperty(), cart.getCheckinDate(), cart.getCheckoutDate(), cart.getCartID()});
+            return 1;
+        }
+        catch(Exception e){
             System.out.println(e);
             return -1;
         }

@@ -15,6 +15,7 @@ public class Customer
     private String username;
     private String password;
 
+    private int userID;
     public String getName() {
         return name;
     }

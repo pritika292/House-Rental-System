@@ -7,7 +7,7 @@ public interface DBMgrDAO {
 
     public Property getProperty(String location, String[] date);
 
-    public Property getProperty(String property_id);
+    public Property getProperty(String propertyID, String propertyType);
 
     public Reservation getReservation(String uname, String property_id);
 

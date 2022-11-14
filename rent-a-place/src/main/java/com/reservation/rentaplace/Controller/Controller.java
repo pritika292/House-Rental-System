@@ -1,23 +1,26 @@
 package com.reservation.rentaplace.Controller;
+import com.nimbusds.oauth2.sdk.ErrorResponse;
 import com.reservation.rentaplace.Domain.*;
 import com.reservation.rentaplace.DAO.DBMgr;
-
+import com.reservation.rentaplace.Domain.Validator.DateValidator;
+import com.reservation.rentaplace.Domain.Validator.DateValidatorUsingDateFormat;
 import com.reservation.rentaplace.Domain.Property;
 import com.reservation.rentaplace.Domain.Login;
 import com.reservation.rentaplace.Domain.Filter;
+import com.reservation.rentaplace.Exception.InvalidRequestException;
+import com.reservation.rentaplace.Exception.ResourceNotFoundException;
 import com.reservation.rentaplace.Service.CustomerService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
 
 import javax.sound.midi.SysexMessage;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 
 @RestController
 public class Controller
@@ -28,7 +31,6 @@ public class Controller
     private CustomerService service;
     private FactoryProducer producer;
     private final HashMap<String, String> getPropertyClass = new HashMap<>();
-
     public Controller(DBMgr db)
     {
         //this.producer = producer;
@@ -83,6 +85,62 @@ public class Controller
     @GetMapping("/search/")
     public String search(@RequestBody Filter f) {
         return null;
+    }
+    @PostMapping("/cart/add/")
+    public String addToCart(@RequestBody CartRequest c) {
+        // Validate user
+        Customer user = db.getCustomer(c.getUsername());
+        if(user == null){
+            throw new InvalidRequestException("Invalid user");
+        }
+        // Validate property id
+        String property_id = c.getPropertyID();
+        if(db.checkProperty(property_id) == null){
+            throw new InvalidRequestException("Invalid property id : "+ property_id);
+        }
+        // Validate dates
+        DateValidator validator = new DateValidatorUsingDateFormat("MM-dd-yyyy");
+        if(!validator.isValid(c.getCheckinDate())){
+            throw new InvalidRequestException("Invalid check-in date");
+        }
+        if(!validator.isValid(c.getCheckoutDate())){
+            throw new InvalidRequestException("Invalid check-out date");
+        }
+        //Add to cart
+        Cart cart = user.getCart();
+        String properties = cart.getProperty();
+        String checkin_dates = cart.getCheckinDate();
+        String checkout_dates =  cart.getCheckoutDate();
+        System.out.println(properties);
+        if(properties.isEmpty()){
+            properties = c.getPropertyID();
+        }
+        else{
+            properties = properties + "," + c.getPropertyID();
+        }
+        if(checkin_dates != null){
+            checkin_dates = checkin_dates + "," + c.getCheckinDate();
+        }
+        else{
+            checkin_dates = c.getCheckinDate();
+        }
+        if(checkout_dates != null){
+            checkout_dates = checkout_dates + "," + c.getCheckoutDate();
+        }
+        else{
+            checkout_dates = c.getCheckoutDate();
+        }
+        cart.setProperty(properties);
+        cart.setCheckinDate(checkin_dates);
+        cart.setCheckoutDate(checkout_dates);
+        user.setCart(cart);
+
+        int result = db.updateCart(user);
+        if(result==1)
+            return "Added to cart successfully";
+        else
+            throw new RuntimeException("Error occurred, cannot add to cart");
+
     }
     @PostMapping("/reserve")
     public String create(Property p, Customer u) {
