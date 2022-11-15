@@ -1,7 +1,9 @@
 package com.reservation.rentaplace.Controller;
-import com.nimbusds.oauth2.sdk.ErrorResponse;
 import com.reservation.rentaplace.Domain.*;
 import com.reservation.rentaplace.DAO.DBMgr;
+import com.reservation.rentaplace.Domain.Request.CartRequest;
+import com.reservation.rentaplace.Domain.Request.CustomerRequest;
+import com.reservation.rentaplace.Domain.Request.HostPropertyRequest;
 import com.reservation.rentaplace.Domain.Validator.DateValidator;
 import com.reservation.rentaplace.Domain.Validator.DateValidatorUsingDateFormat;
 import com.reservation.rentaplace.Domain.Property;
@@ -11,16 +13,10 @@ import com.reservation.rentaplace.Exception.InvalidRequestException;
 import com.reservation.rentaplace.Exception.ResourceNotFoundException;
 import com.reservation.rentaplace.Service.CustomerService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import com.reservation.rentaplace.Domain.Constants;
 
-import javax.sound.midi.SysexMessage;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.text.SimpleDateFormat;
 
 @RestController
 public class Controller
@@ -29,34 +25,25 @@ public class Controller
     private DBMgr db;
     @Autowired
     private CustomerService service;
-    private FactoryProducer producer;
-    private final HashMap<String, String> getPropertyClass = new HashMap<>();
+
     public Controller(DBMgr db)
     {
-        //this.producer = producer;
         this.db = db;
-        getPropertyClass.put("villa", "FirstClass");
-        getPropertyClass.put("beachHouse", "FirstClass");
-        getPropertyClass.put("resort", "FirstClass");
-        getPropertyClass.put("apartment", "BusinessClass");
-        getPropertyClass.put("house", "BusinessClass");
-        getPropertyClass.put("studio", "BusinessClass");
-        getPropertyClass.put("motel", "EconomyClass");
     }
     @PostMapping("/register")
     public String save(@RequestBody CustomerRequest c) {
         if(!c.verifyUsername())
-            return "Username cannot exceed the length of 10";
+            throw new InvalidRequestException("Username cannot exceed the length of 10");
         if(!c.verifyEmail())
-            return "Invalid email id";
+            throw new InvalidRequestException("Invalid email id");
         if(!c.verifyPhoneNumber())
-            return "Invalid phone number";
+            throw new InvalidRequestException("Invalid phone number");
 
         int cartId = db.createCart();
         if(cartId == -1)
-            return "Error occurred";
+            throw new RuntimeException("Error occurred");
         if(db.save(c, cartId) == 0){
-            return "Error occurred";
+            throw new RuntimeException("Error occurred");
         }
         return c.getName()+ " registered successfully";
     }
@@ -68,8 +55,12 @@ public class Controller
                 if (c.verifyPassword(l.getPassword())) {
                     return "Login successful";
                 }
+                else
+                    throw new InvalidRequestException("Login unsuccessful - invalid password");
             }
-            return "Login unsuccessful";
+            else{
+                throw new ResourceNotFoundException("Login unsuccessful - invalid username");
+            }
             //Do not delete below code
 //        if (l.getUsername() != null && l.getPassword() != null)
 //        {
@@ -94,8 +85,9 @@ public class Controller
             throw new InvalidRequestException("Invalid user");
         }
         // Validate property id
-        String property_id = c.getPropertyID();
-        if(db.checkProperty(property_id) == null){
+        Integer property_id = c.getPropertyID();
+        String property_type = db.checkProperty(property_id);
+        if(property_type == null){
             throw new InvalidRequestException("Invalid property id : "+ property_id);
         }
         // Validate dates
@@ -108,39 +100,21 @@ public class Controller
         }
         //Add to cart
         Cart cart = user.getCart();
-        String properties = cart.getProperty();
-        String checkin_dates = cart.getCheckinDate();
-        String checkout_dates =  cart.getCheckoutDate();
-        System.out.println(properties);
-        if(properties.isEmpty()){
-            properties = c.getPropertyID();
+        RentalProperty p = db.getProperty(property_id);
+        SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
+        try{
+            cart.addToCart(p,sdf.parse(c.getCheckinDate()), sdf.parse(c.getCheckoutDate()));
         }
-        else{
-            properties = properties + "," + c.getPropertyID();
+        catch(Exception e){
+            System.out.println(e);
+            throw new RuntimeException("Error occurred, cannot add to cart");
         }
-        if(checkin_dates != null){
-            checkin_dates = checkin_dates + "," + c.getCheckinDate();
-        }
-        else{
-            checkin_dates = c.getCheckinDate();
-        }
-        if(checkout_dates != null){
-            checkout_dates = checkout_dates + "," + c.getCheckoutDate();
-        }
-        else{
-            checkout_dates = c.getCheckoutDate();
-        }
-        cart.setProperty(properties);
-        cart.setCheckinDate(checkin_dates);
-        cart.setCheckoutDate(checkout_dates);
         user.setCart(cart);
-
         int result = db.updateCart(user);
         if(result==1)
             return "Added to cart successfully";
         else
             throw new RuntimeException("Error occurred, cannot add to cart");
-
     }
     @PostMapping("/reserve")
     public String create(Property p, Customer u) {
@@ -156,9 +130,9 @@ public class Controller
         String propertyType = hp.getProperty_type().toLowerCase();
 
         // Validation
-        if(getPropertyClass.containsKey(propertyType)){
-            producer = new FactoryProducer();
-            PropertyFactory factory = producer.getFactory(getPropertyClass.get(propertyType));
+        if(Constants.getPropertyClass().containsKey(propertyType)){
+            FactoryProducer producer = FactoryProducer.getInstance();
+            PropertyFactory factory = producer.getFactory(Constants.getPropertyClass().get(propertyType));
             RentalProperty property = factory.getProperty(propertyType);
 
             property.setPrice_per_night(hp.getPrice_per_night());
@@ -176,11 +150,11 @@ public class Controller
             property.setAvailability(hp.getAvailability());
 
             if(db.save(property) == 1)
-                return "Hosted Property sucessfully.";
-            return "Hosted Property not saved successfully.";
+                return "Hosted property successfully.";
+            throw new RuntimeException("Could not host property.");
         }
         else
-            return "Property type should belong to (Villa, BeachHouse, Resort, Apartment, Studio, House, Motel).";
+            throw new InvalidRequestException("Property type should belong to (Villa, BeachHouse, Resort, Apartment, Studio, House, Motel).");
     }
 
 }

@@ -1,7 +1,8 @@
 package com.reservation.rentaplace.DAO;
 import com.reservation.rentaplace.Domain.*;
-import com.reservation.rentaplace.mapper.CustomerRowMapper;
-import com.reservation.rentaplace.mapper.CartRowMapper;
+import com.reservation.rentaplace.Domain.Request.CartRequest;
+import com.reservation.rentaplace.Domain.Request.CustomerRequest;
+import com.reservation.rentaplace.mapper.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementCreator;
@@ -12,6 +13,9 @@ import org.springframework.stereotype.Repository;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
 
 @Repository
 public class DBMgr implements DBMgrDAO
@@ -42,10 +46,36 @@ public class DBMgr implements DBMgrDAO
     }
 
     @Override
-    public RentalProperty getProperty(String propertyID, String propertyType) {
-        return null;
+    public RentalProperty getProperty(Integer propertyID) {
+        String propertyType = checkProperty(propertyID);
+        FactoryProducer producer = FactoryProducer.getInstance();
+        PropertyFactory factory = producer.getFactory(Constants.getPropertyClass().get(propertyType));
+        RentalProperty property = factory.getProperty(propertyType);
+        String query = "SELECT * from Property where property_id = (?)";
+        try{
+            PropertyRow p = jdbcTemplate.queryForObject(query, new PropertyRowMapper(), propertyID);
+            property.setProperty_id(p.getProperty_id());
+            property.setPrice_per_night(p.getPrice_per_night());
+            property.setNum_bedrooms(p.getNum_of_bedrooms());
+            property.setNum_baths(p.getNum_of_bathrooms());
+            property.setProperty_description(p.getProperty_description());
+            property.setProperty_name(p.getProperty_name());
+            property.setProperty_type(p.getProperty_type());
+            property.setCity(p.getCity());
+            property.setPet_friendly(p.getPet_friendly());
+            property.setWifi_avail(p.getWifi_avail());
+            property.setCarpet_area(p.getCarpet_area());
+            property.setAverage_rating(p.getAvg_rating());
+            property.setOwner_id(p.getOwner_id());
+            property.setAvailability(p.getAvailability());
+            return property;
+        }
+        catch(Exception e){
+            System.out.println(e);
+            return null;
+        }
     }
-    public String checkProperty(String property_id){
+    public String checkProperty(Integer property_id){
         String query = "select property_type from Property WHERE property_id = ?";
         try{
             String property_type = (String)jdbcTemplate.queryForObject(query, String.class, property_id);
@@ -67,7 +97,7 @@ public class DBMgr implements DBMgrDAO
         return 0;
     }
     public int createCart(){
-        String insert_sql = "INSERT INTO Cart (property_ids) VALUES (?)";
+        String insert_sql = "INSERT INTO Cart (property_ids, cart_value) VALUES (?)";
         try{
             KeyHolder keyHolder = new GeneratedKeyHolder();
             jdbcTemplate.update(
@@ -89,7 +119,40 @@ public class DBMgr implements DBMgrDAO
     }
     public Cart getCart(int user_id){
         try{
-            Cart cart = jdbcTemplate.queryForObject("SELECT * from Cart where cart_id in (SELECT cart_id from Customer where customer_id = (?))", new CartRowMapper(), user_id);
+            CartRow cartrow  = jdbcTemplate.queryForObject("SELECT * from Cart where cart_id in (SELECT cart_id from Customer where customer_id = (?))", new CartRowMapper(), user_id);
+            Cart cart = new Cart();
+
+            String[] property_ids;
+            String[] checkin_dates;
+            String[] checkout_dates;
+            ArrayList<RentalProperty> property = new ArrayList<RentalProperty>();
+            ArrayList<Date> checkinDate = new ArrayList<Date>();
+            ArrayList<Date> checkoutDate = new ArrayList<Date>();
+            if(cartrow.getProperty_ids() !="" && cartrow.getCheckout_date() != null && cartrow.getCheckout_date()!=null){
+                property_ids = cartrow.getProperty_ids().split(",");
+                checkin_dates =  cartrow.getCheckin_date().split(",");
+                checkout_dates =  cartrow.getCheckout_date().split(",");
+                SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
+                if(property_ids.length == 0){
+                    property.add(getProperty(Integer.parseInt(cartrow.getProperty_ids())));
+                    checkinDate.add(sdf.parse(cartrow.getCheckin_date()));
+                    checkoutDate.add(sdf.parse(cartrow.getCheckout_date()));
+                }
+                for(int i=0;i<property_ids.length;i++){
+                    property.add(getProperty(Integer.parseInt(property_ids[i])));
+                    checkinDate.add(sdf.parse(checkin_dates[i]));
+                    checkoutDate.add(sdf.parse(checkout_dates[i]));
+                }
+            }
+
+            cart.setCartID(cartrow.getCart_id());
+            cart.setCheckinDate(checkinDate);
+            cart.setCheckoutDate(checkoutDate);
+            cart.setProperty(property);
+            if(cartrow.getCart_value() == null)
+                cart.setCartValue(0);
+            cart.setCartValue(cartrow.getCart_value());
+
             return cart;
         }
         catch (Exception e) {
@@ -101,7 +164,23 @@ public class DBMgr implements DBMgrDAO
         String update_sql = "";
         try{
             Cart cart = c.getCart();
-            jdbcTemplate.update("UPDATE Cart SET property_ids = (?), checkin_date = (?), checkout_date = (?) WHERE cart_id = (?)", new Object[] {cart.getProperty(), cart.getCheckinDate(), cart.getCheckoutDate(), cart.getCartID()});
+            ArrayList<RentalProperty> items = cart.getProperty();
+            int num_items = items.size();
+            String properties = "";
+            String checkinDates = "";
+            String checkoutDates = "";
+            if(num_items !=0){
+                SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
+                properties = Integer.toString(items.get(0).getProperty_id());
+                checkinDates = sdf.format(cart.getCheckinDate().get(0));
+                checkoutDates = sdf.format(cart.getCheckoutDate().get(0));
+                for(int i=1;i<cart.getProperty().size();i++){
+                    properties = properties +"," + items.get(i).getProperty_id();
+                    checkinDates = checkinDates + "," +sdf.format(cart.getCheckinDate().get(i));
+                    checkoutDates = checkoutDates + "," +sdf.format(cart.getCheckoutDate().get(i));
+                }
+            }
+            jdbcTemplate.update("UPDATE Cart SET property_ids = (?), checkin_date = (?), checkout_date = (?), cart_value=(?) WHERE cart_id = (?)", new Object[] {properties, checkinDates, checkoutDates, cart.getCartValue(), cart.getCartID()});
             return 1;
         }
         catch(Exception e){
