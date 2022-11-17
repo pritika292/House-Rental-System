@@ -1,4 +1,6 @@
-package com.reservation.rentaplace.Domain;
+package com.reservation.rentaplace.Domain.Factory;
+
+import com.reservation.rentaplace.Domain.*;
 
 public class FirstClassFactory extends PropertyFactory {
 

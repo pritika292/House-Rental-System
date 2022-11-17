@@ -1,6 +1,8 @@
-package com.reservation.rentaplace.Domain;
+package com.reservation.rentaplace.Domain.Factory;
 
-public class BusinessClassFactory extends PropertyFactory{
+import com.reservation.rentaplace.Domain.*;
+
+public class BusinessClassFactory extends PropertyFactory {
     @Override
     public RentalProperty getProperty(String property_type) {
         if(property_type.equalsIgnoreCase("Apartment")){

@@ -1,6 +1,4 @@
-package com.reservation.rentaplace.Domain;
-
-import org.springframework.context.annotation.Bean;
+package com.reservation.rentaplace.Domain.Factory;
 
 
 public class FactoryProducer {
