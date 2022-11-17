@@ -1,6 +1,8 @@
 package com.reservation.rentaplace.Controller;
 import com.reservation.rentaplace.Domain.*;
 import com.reservation.rentaplace.DAO.DBMgr;
+import com.reservation.rentaplace.Domain.Command.CouponList;
+import com.reservation.rentaplace.Domain.Command.InvoiceGenerator;
 import com.reservation.rentaplace.Domain.Factory.FactoryProducer;
 import com.reservation.rentaplace.Domain.Factory.PropertyFactory;
 import com.reservation.rentaplace.Domain.Request.CartRequest;
@@ -19,7 +21,9 @@ import org.springframework.web.bind.annotation.*;
 import com.reservation.rentaplace.Domain.Constants;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 @RestController
 public class Controller
@@ -79,6 +83,28 @@ public class Controller
     @GetMapping("/search/")
     public String search(@RequestBody Filter f) {
         return null;
+    }
+    @PostMapping("/generateInvoice/{uname}")
+    public float generateInvoice(@RequestBody CouponList c, @PathVariable String uname)
+    {
+
+        List<Float> couponDiscounts = new ArrayList<>();
+        for (int i = 0; i < c.getCoupons().size(); i++)
+        {
+            couponDiscounts.add(c.getCoupons().get(i).getCouponDiscount());
+        }
+        Customer customer = db.getCustomer(uname);
+        Cart customerCart = db.getCart(customer.getUserID());
+        if (customerCart.getCartValue() == 0)
+        {
+            return -1f;
+        }
+        else
+        {
+            InvoiceGenerator generator = InvoiceGenerator.getInvoiceGenerator();
+            return generator.generateInvoice(couponDiscounts, customer.getCart().getCartValue());
+        }
+
     }
     @PostMapping("/cart/add/")
     public String addToCart(@RequestBody CartRequest c) {
