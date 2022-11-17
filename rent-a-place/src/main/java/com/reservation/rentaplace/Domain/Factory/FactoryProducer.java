@@ -1,9 +1,16 @@
-package com.reservation.rentaplace.Domain;
-
-import org.springframework.context.annotation.Bean;
+package com.reservation.rentaplace.Domain.Factory;
 
 
 public class FactoryProducer {
+
+    private static FactoryProducer instance;
+
+    public static FactoryProducer getInstance(){
+        if(instance == null){
+            instance = new FactoryProducer();
+        }
+        return instance;
+    }
     public PropertyFactory getFactory(String factoryType){
         if(factoryType.equalsIgnoreCase("FirstClass")){
             return new FirstClassFactory();

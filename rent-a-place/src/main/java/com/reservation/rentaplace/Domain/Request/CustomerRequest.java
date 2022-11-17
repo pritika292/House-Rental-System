@@ -1,4 +1,4 @@
-package com.reservation.rentaplace.Domain;
+package com.reservation.rentaplace.Domain.Request;
 import lombok.Setter;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

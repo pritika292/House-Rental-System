@@ -1,13 +1,14 @@
 package com.reservation.rentaplace.DAO;
 
 import com.reservation.rentaplace.Domain.*;
+import com.reservation.rentaplace.Domain.Request.CustomerRequest;
 
 public interface DBMgrDAO {
     public Customer getCustomer(String uname);
 
     public Property getProperty(String location, String[] date);
 
-    public Property getProperty(String property_id);
+    public Property getProperty(Integer propertyID);
 
     public Reservation getReservation(String uname, String property_id);
 
