@@ -33,17 +33,22 @@ public class InvoiceGenerator
 
     public float generateInvoice(List<Float> coupons, float price)
     {
-        for (Float f: coupons)
+        if (coupons != null)
         {
-            AddOn a = new AddCoupon(f);
-            this.addTransaction(a);
+            for (Float f: coupons)
+            {
+                AddOn a = new AddCoupon(f);
+                this.addTransaction(a);
+            }
         }
         this.addTransaction(new AddTax());
         this.addTransaction(new AddProcessingFee());
         for (int i = 0; i < addOns.size(); i++)
         {
             price = addOns.get(i).executeTransaction(price);
+            System.out.println(price);
         }
+        addOns = new ArrayList<>();
         return price;
     }
 }

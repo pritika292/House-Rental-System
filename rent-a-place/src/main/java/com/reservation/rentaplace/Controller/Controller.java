@@ -85,27 +85,42 @@ public class Controller
         return null;
     }
     @PostMapping("/generateInvoice/{uname}")
-    public float generateInvoice(@RequestBody CouponList c, @PathVariable String uname)
+    public float generateInvoice(@RequestBody(required = false) CouponList c, @PathVariable String uname)
     {
 
-        List<Float> couponDiscounts = new ArrayList<>();
-        for (int i = 0; i < c.getCoupons().size(); i++)
+        List<Float> couponDiscounts = null;
+        if (c.getCoupons()!= null)
         {
-            couponDiscounts.add(c.getCoupons().get(i).getCouponDiscount());
+            couponDiscounts = new ArrayList<>();
+            for (int i = 0; i < c.getCoupons().size(); i++)
+            {
+                couponDiscounts.add(c.getCoupons().get(i).getCouponDiscount());
+            }
         }
-        Customer customer = db.getCustomer(uname);
-        Cart customerCart = db.getCart(customer.getUserID());
+        Cart customerCart = getCustomerCart(uname);
         if (customerCart.getCartValue() == 0)
         {
-            return -1f;
+            throw new ResourceNotFoundException("User does not have any properties in cart");
         }
         else
         {
             InvoiceGenerator generator = InvoiceGenerator.getInvoiceGenerator();
-            return generator.generateInvoice(couponDiscounts, customer.getCart().getCartValue());
+            return generator.generateInvoice(couponDiscounts, customerCart.getCartValue());
         }
 
     }
+    //Private helper method for generateInvoice
+    private Cart getCustomerCart(String uname)
+    {
+        Customer customer = db.getCustomer(uname);
+        if (customer == null)
+        {
+            throw new ResourceNotFoundException("User not found");
+        }
+        Cart customerCart = db.getCart(customer.getUserID());
+        return customerCart;
+    }
+
     @PostMapping("/cart/add/")
     public String addToCart(@RequestBody CartRequest c) {
         // Validate user
