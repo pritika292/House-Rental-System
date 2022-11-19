@@ -1,13 +1,10 @@
 package com.reservation.rentaplace.Domain;
-
 //import com.sun.org.apache.xpath.internal.operations.Bool;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.util.Map;
 
 @Setter
 @Getter
