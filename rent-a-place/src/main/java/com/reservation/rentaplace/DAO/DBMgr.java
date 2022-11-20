@@ -115,7 +115,7 @@ public class DBMgr implements DBMgrDAO
         ArrayList<Reservation> reservations = new ArrayList<Reservation>();
         String query = "SELECT * from Reservation";
         try {
-            SimpleDateFormat sdf = new SimpleDateFormat("MM-DD-YYYY");
+            SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
             List<ReservationRow> p = jdbcTemplate.query(query, new ReservationRowMapper());
             for(int i=0;i<p.size();i++){
                 Reservation r = new Reservation();

@@ -28,11 +28,13 @@ public class Cart {
     public boolean verifyCart(ArrayList<Reservation> reservations) {
         for(int i=0;i<property.size();i++){
             for(int j=0;j<reservations.size();j++){
-                if(checkinDate.get(i).compareTo(reservations.get(j).getCheckinDate()) >=0 && checkinDate.get(i).compareTo(reservations.get(j).getCheckoutDate()) < 0){
-                    return false;
-                }
-                if(checkoutDate.get(i).compareTo(reservations.get(j).getCheckinDate()) >=0 && checkoutDate.get(i).compareTo(reservations.get(j).getCheckoutDate()) < 0){
-                    return false;
+                if(property.get(i).getProperty_id() == reservations.get(j).getProperty().getProperty_id()) {
+                    if (checkinDate.get(i).compareTo(reservations.get(j).getCheckinDate()) >= 0 && checkinDate.get(i).compareTo(reservations.get(j).getCheckoutDate()) <= 0) {
+                        return false;
+                    }
+                    if (checkoutDate.get(i).compareTo(reservations.get(j).getCheckinDate()) >= 0 && checkoutDate.get(i).compareTo(reservations.get(j).getCheckoutDate()) <= 0) {
+                        return false;
+                    }
                 }
             }
         }
