@@ -146,7 +146,7 @@ public class DBMgr implements DBMgrDAO
         return 0;
     }
     public int createCart(){
-        String insert_sql = "INSERT INTO Cart (property_ids, cart_value) VALUES (?)";
+        String insert_sql = "INSERT INTO Cart (property_ids, cart_value) VALUES (?, ?)";
         try{
             KeyHolder keyHolder = new GeneratedKeyHolder();
             jdbcTemplate.update(
@@ -155,6 +155,7 @@ public class DBMgr implements DBMgrDAO
                             PreparedStatement ps =
                                     connection.prepareStatement(insert_sql, new String[] {"id"});
                             ps.setString(1, "");
+                            ps.setFloat(2,0);
                             return ps;
                         }
                     },
@@ -238,9 +239,9 @@ public class DBMgr implements DBMgrDAO
         }
     }
     @Override
-    public int save(CustomerRequest c, int cartId){
+    public int save(CustomerRequest c, int cartId, String key){
         try{
-            jdbcTemplate.update("INSERT INTO Customer (customer_name, username, password, email, phone_number, cart_id) VALUES (?, ?, ?, ?, ?, ?)", new Object[] {c.getName(), c.getUsername(), c.getPassword(), c.getEmail(), c.getPhone_number(), cartId});
+            jdbcTemplate.update("INSERT INTO Customer (customer_name, username, password, email, phone_number, cart_id, apiKey) VALUES (?, ?, ?, ?, ?, ?, ?)", new Object[] {c.getName(), c.getUsername(), c.getPassword(), c.getEmail(), c.getPhone_number(), cartId, key});
             return 1;
         }
         catch (Exception e) {

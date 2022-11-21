@@ -9,11 +9,11 @@ import com.reservation.rentaplace.Domain.Request.CustomerRequest;
 import com.reservation.rentaplace.Domain.Request.HostPropertyRequest;
 import com.reservation.rentaplace.Domain.Validator.DateValidator;
 import com.reservation.rentaplace.Domain.Validator.DateValidatorUsingDateFormat;
-import com.reservation.rentaplace.Domain.Property;
 import com.reservation.rentaplace.Domain.Login;
 import com.reservation.rentaplace.Domain.Filter;
 import com.reservation.rentaplace.Exception.InvalidRequestException;
 import com.reservation.rentaplace.Exception.ResourceNotFoundException;
+import com.reservation.rentaplace.Exception.UnauthorizedException;
 import com.reservation.rentaplace.Service.CustomerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -22,12 +22,16 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.reservation.rentaplace.Domain.Constants;
 
-import javax.swing.text.html.parser.Entity;
-import java.lang.reflect.Array;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 @RestController
 public class Controller
@@ -41,6 +45,46 @@ public class Controller
     {
         this.db = db;
     }
+    public String generateMD5Hashvalue(String userName)
+    {
+        LocalDate dateObj = LocalDate.now();
+        DateTimeFormatter formatter
+                = DateTimeFormatter.ofPattern("yyyyMMdd");
+        String date = dateObj.format(formatter);
+
+        MessageDigest md;
+        try {
+            md = MessageDigest.getInstance("MD5");
+        }
+        catch (NoSuchAlgorithmException e) {
+            throw new IllegalArgumentException(e);
+        }
+        String secretPhase
+                = "geeks"; // exclusively to set for geeks
+        System.out.println("Current Date : " + date);
+        System.out.println("Login Id : " + userName);
+        System.out.println("Secret Phase : " + secretPhase);
+
+        // By using the current date, userName(emailId) and
+        // the secretPhase , it is generated
+        byte[] hashResult
+                = md.digest((date + userName + secretPhase)
+                .getBytes(UTF_8));
+        // convert the value to hex
+        String password = bytesToHex(hashResult);
+        System.out.println("Generated password.."
+                + password);
+
+        return password;
+    }
+    private String bytesToHex(byte[] bytes)
+    {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) {
+            sb.append(String.format("%02x", b));
+        }
+        return sb.toString();
+    }
     @PostMapping("/register")
     public String save(@RequestBody CustomerRequest c) {
         if(!c.verifyUsername())
@@ -53,10 +97,11 @@ public class Controller
         int cartId = db.createCart();
         if(cartId == -1)
             throw new RuntimeException("Error occurred");
-        if(db.save(c, cartId) == 0){
+        String key = generateMD5Hashvalue(c.getUsername());
+        if(db.save(c, cartId, key) == 0){
             throw new RuntimeException("Error occurred");
         }
-        return c.getName()+ " registered successfully";
+        return c.getName()+ " registered successfully.";
     }
     @PostMapping("/login")
     public String login(@RequestBody Login l)
@@ -64,7 +109,7 @@ public class Controller
             Customer c = db.getCustomer(l.getUsername());
             if (c != null) {
                 if (c.verifyPassword(l.getPassword())) {
-                    return "Login successful";
+                    return "Login successful. API Key : " + c.getApiKey();
                 }
                 else
                     throw new InvalidRequestException("Login unsuccessful - invalid password");
@@ -88,12 +133,15 @@ public class Controller
     public String search(@RequestBody Filter f) {
         return null;
     }
-    @PostMapping("/cart/add/")
-    public String addToCart(@RequestBody CartRequest c) {
+    @PostMapping("/cart/add/{apikey}")
+    public String addToCart(@RequestBody CartRequest c, @PathVariable String apikey) {
         // Validate user
         Customer user = db.getCustomer(c.getUsername());
         if(user == null){
             throw new InvalidRequestException("Invalid user");
+        }
+        if(!user.getApiKey().equals(apikey)){
+            throw new UnauthorizedException("Unauthenticated - incorrect API Key.");
         }
         // Validate property id
         int propertyID = c.getPropertyID();
@@ -122,13 +170,16 @@ public class Controller
             throw new RuntimeException("Error occurred, cannot add to cart");
     }
 
-    @PostMapping("/cart/remove/")
-    public String removeFromCart(@RequestBody CartRequest c){
+    @PostMapping("/cart/remove/{apikey}")
+    public String removeFromCart(@RequestBody CartRequest c, @PathVariable String apikey){
         // validate user
         Customer user = db.getCustomer(c.getUsername());
         Cart cart = user.getCart();
         if(user == null){
             throw new InvalidRequestException("Invalid user");
+        }
+        if(!user.getApiKey().equals(apikey)){
+            throw new UnauthorizedException("Unauthenticated - incorrect API Key.");
         }
         SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
         int idx = getDeleteCartIndex(cart,c, sdf);
@@ -174,9 +225,15 @@ public class Controller
         }
         return index;
     }
-    @GetMapping(path = "/cart/view/{username}", produces= MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Object> viewCart(@PathVariable String username) {
+    @GetMapping(path = "/cart/view/{username}/{apikey}", produces= MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Object> viewCart(@PathVariable String username, @PathVariable String apikey) {
         Customer user = db.getCustomer(username);
+        if(user == null){
+            throw new ResourceNotFoundException("Invalid User");
+        }
+        if(!user.getApiKey().equals(apikey)){
+            throw new UnauthorizedException("Unauthenticated - incorrect API Key.");
+        }
         Cart cart = user.getCart();
         SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
         List<JSONObject> entities = new ArrayList<JSONObject>();
@@ -246,9 +303,18 @@ public class Controller
     public static void rate_property(@PathVariable String confirmationNumber , @PathVariable Float rating) {
 
     }
-    @PostMapping("/hostProperty")
-    public String hostProperty(@RequestBody HostPropertyRequest hp){
-        // this would be Villa, Resort, BeachHouse, Apartment, Studio, Motel
+    @PostMapping("/hostProperty/{username}/{apikey}")
+    public String hostProperty(@RequestBody HostPropertyRequest hp, @PathVariable String username, @PathVariable String apikey){
+        // Validate user
+        Customer user =  db.getCustomer(username);
+        if(user == null){
+            throw new ResourceNotFoundException("Invalid user.");
+        }
+        if(!user.getApiKey().equals(apikey)){
+            throw new UnauthorizedException("Unauthenticated - incorrect API Key.");
+        }
+
+        // This would be Villa, Resort, BeachHouse, Apartment, Studio, Motel
         String propertyType = hp.getProperty_type().toLowerCase();
 
         // Validation
@@ -256,7 +322,7 @@ public class Controller
             FactoryProducer producer = FactoryProducer.getInstance();
             PropertyFactory factory = producer.getFactory(Constants.getPropertyClass().get(propertyType));
             RentalProperty property = factory.getProperty(propertyType);
-            property = setProperty(property, hp);
+            property = setProperty(property, hp, user.getUserID());
 
             if(db.save(property) == 1)
                 return "Hosted property successfully.";
@@ -266,7 +332,7 @@ public class Controller
             throw new InvalidRequestException("Property type should belong to (Villa, BeachHouse, Resort, Apartment, Studio, House, Motel).");
     }
 
-    private RentalProperty setProperty(RentalProperty property, HostPropertyRequest hp){
+    private RentalProperty setProperty(RentalProperty property, HostPropertyRequest hp, int ownerID){
         property.setPrice_per_night(hp.getPrice_per_night());
         property.setNum_bedrooms(hp.getNum_of_bedrooms());
         property.setNum_baths(hp.getNum_of_bathrooms());
@@ -277,8 +343,8 @@ public class Controller
         property.setPet_friendly(hp.getPet_friendly());
         property.setWifi_avail(hp.getWifi_avail());
         property.setCarpet_area(hp.getCarpet_area());
-        property.setAverage_rating(hp.getAvg_rating());
-        property.setOwner_id(hp.getOwner_id());
+        property.setAverage_rating(0f);
+        property.setOwner_id(ownerID);
         property.setAvailability(hp.getAvailability());
 
         return property;

@@ -20,8 +20,8 @@ public class HostPropertyRequest {
     private Integer pet_friendly;
     private Integer wifi_avail;
     private Integer carpet_area;
-    private float avg_rating;
-    private Integer owner_id;
+//    private float avg_rating;
+//    private Integer owner_id;
     private Integer availability;
 
 }
