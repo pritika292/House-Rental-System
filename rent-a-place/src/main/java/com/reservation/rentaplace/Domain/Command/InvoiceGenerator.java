@@ -11,6 +11,7 @@ public class InvoiceGenerator
     private static InvoiceGenerator generator;
     private List<AddOn> addOns;
 
+
     public static InvoiceGenerator getInvoiceGenerator()
     {
         if (generator == null)

@@ -2,6 +2,7 @@ package com.reservation.rentaplace.Controller;
 import com.nimbusds.jose.shaded.json.JSONObject;
 import com.reservation.rentaplace.Domain.*;
 import com.reservation.rentaplace.DAO.DBMgr;
+import com.reservation.rentaplace.Domain.Command.Coupon;
 import com.reservation.rentaplace.Domain.Command.CouponList;
 import com.reservation.rentaplace.Domain.Command.InvoiceGenerator;
 import com.reservation.rentaplace.Domain.Factory.FactoryProducer;
@@ -29,6 +30,7 @@ import java.lang.reflect.Array;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 
 @RestController
@@ -98,9 +100,11 @@ public class Controller
         if (c.getCoupons()!= null)
         {
             couponDiscounts = new ArrayList<>();
-            for (int i = 0; i < c.getCoupons().size(); i++)
+            ArrayList<String> coupons = checkCoupons(c.getCoupons());
+            for (int i = 0; i < coupons.size(); i++)
             {
-                couponDiscounts.add(c.getCoupons().get(i).getCouponDiscount());
+                couponDiscounts.add(Constants.getCoupons().get(coupons.get(i)));
+
             }
         }
         Cart customerCart = getCustomerCart(uname);
@@ -115,6 +119,27 @@ public class Controller
         }
 
     }
+    //Private helper method to verify coupons passed in by user
+    private ArrayList<String> checkCoupons(List<Coupon> coupons)
+    {
+        HashSet<String> allCoupons = new HashSet<>();
+        for (int i = 0; i < coupons.size(); i++)
+        {
+            if (allCoupons.contains(coupons.get(i).getCouponCode()))
+            {
+                throw new InvalidRequestException("Coupon " + coupons.get(i).getCouponCode() + " already added");
+            }
+            if (!Constants.getCoupons().containsKey(coupons.get(i).getCouponCode()))
+            {
+                throw new ResourceNotFoundException("Coupon not found");
+            }
+            allCoupons.add(coupons.get(i).getCouponCode());
+        }
+       return new ArrayList<>(allCoupons);
+
+    }
+
+
     //Private helper method for generateInvoice
     private Cart getCustomerCart(String uname)
     {

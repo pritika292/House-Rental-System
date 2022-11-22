@@ -13,5 +13,5 @@ import lombok.Setter;
 public class Coupon
 {
     private String couponCode;
-    private float couponDiscount;
+    //private float couponDiscount;
 }
