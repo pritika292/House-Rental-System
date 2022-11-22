@@ -40,6 +40,7 @@ public class DBMgr implements DBMgrDAO
             Customer c = jdbcTemplate.queryForObject(query, new CustomerRowMapper(), uname);
             System.out.println("User not null");
             Cart cart = getCart(c.getUserID());
+            System.out.println(cart.getCartID());
             c.setCart(cart);
             return c;
         }

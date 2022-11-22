@@ -2,6 +2,9 @@ package com.reservation.rentaplace.Controller;
 import com.nimbusds.jose.shaded.json.JSONObject;
 import com.reservation.rentaplace.Domain.*;
 import com.reservation.rentaplace.DAO.DBMgr;
+import com.reservation.rentaplace.Domain.Command.Coupon;
+import com.reservation.rentaplace.Domain.Command.CouponList;
+import com.reservation.rentaplace.Domain.Command.InvoiceGenerator;
 import com.reservation.rentaplace.Domain.Factory.FactoryProducer;
 import com.reservation.rentaplace.Domain.Factory.PropertyFactory;
 import com.reservation.rentaplace.Domain.Request.CartRequest;
@@ -27,6 +30,7 @@ import java.lang.reflect.Array;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 
 @RestController
@@ -88,6 +92,66 @@ public class Controller
     public String search(@RequestBody Filter f) {
         return null;
     }
+    @PostMapping("/generateInvoice/{uname}")
+    public float generateInvoice(@RequestBody(required = false) CouponList c, @PathVariable String uname)
+    {
+
+        List<Float> couponDiscounts = null;
+        if (c.getCoupons()!= null)
+        {
+            couponDiscounts = new ArrayList<>();
+            ArrayList<String> coupons = checkCoupons(c.getCoupons());
+            for (int i = 0; i < coupons.size(); i++)
+            {
+                couponDiscounts.add(Constants.getCoupons().get(coupons.get(i)));
+
+            }
+        }
+        Cart customerCart = getCustomerCart(uname);
+        if (customerCart.getCartValue() == 0)
+        {
+            throw new ResourceNotFoundException("User does not have any properties in cart");
+        }
+        else
+        {
+            InvoiceGenerator generator = InvoiceGenerator.getInvoiceGenerator();
+            return generator.generateInvoice(couponDiscounts, customerCart.getCartValue());
+        }
+
+    }
+    //Private helper method to verify coupons passed in by user
+    private ArrayList<String> checkCoupons(List<Coupon> coupons)
+    {
+        HashSet<String> allCoupons = new HashSet<>();
+        for (int i = 0; i < coupons.size(); i++)
+        {
+            if (allCoupons.contains(coupons.get(i).getCouponCode()))
+            {
+                throw new InvalidRequestException("Coupon " + coupons.get(i).getCouponCode() + " already added");
+            }
+            if (!Constants.getCoupons().containsKey(coupons.get(i).getCouponCode()))
+            {
+                throw new ResourceNotFoundException("Coupon not found");
+            }
+            allCoupons.add(coupons.get(i).getCouponCode());
+        }
+       return new ArrayList<>(allCoupons);
+
+    }
+
+
+    //Private helper method for generateInvoice
+    private Cart getCustomerCart(String uname)
+    {
+        Customer customer = db.getCustomer(uname);
+        if (customer == null)
+        {
+            throw new ResourceNotFoundException("User not found");
+        }
+        Cart customerCart = db.getCart(customer.getUserID());
+        return customerCart;
+    }
+
     @PostMapping("/cart/add/")
     public String addToCart(@RequestBody CartRequest c) {
         // Validate user
