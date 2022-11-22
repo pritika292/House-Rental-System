@@ -24,14 +24,14 @@ public class DBMgr implements DBMgrDAO
 {
     @Autowired
     public JdbcTemplate jdbcTemplate;
-//    private static DBMgr instance;
-//
-//    public static DBMgr getInstance(){
-//        if(instance == null){
-//            instance = new DBMgr();
-//        }
-//        return instance;
-//    }
+    private static DBMgr instance;
+
+    public static DBMgr getInstance(){
+        if(instance == null){
+            instance = new DBMgr();
+        }
+        return instance;
+    }
     @Override
     public Customer getCustomer(String uname)
     {
@@ -64,6 +64,19 @@ public class DBMgr implements DBMgrDAO
             System.out.println("User is null");
             return null;
         }
+    }
+
+    public int endSession(Customer c){
+        int userID = c.getUserID();
+        String query = "UPDATE Customer SET apiKey = ? where customer_id = ?";
+        try{
+            jdbcTemplate.update(query, new Object[]{null, userID});
+        }
+        catch (Exception e){
+            System.out.println(e);
+            return -1;
+        }
+        return 1;
     }
 
     @Override
@@ -147,7 +160,7 @@ public class DBMgr implements DBMgrDAO
         return 0;
     }
     public int createCart(){
-        String insert_sql = "INSERT INTO Cart (property_ids, cart_value) VALUES (?)";
+        String insert_sql = "INSERT INTO Cart (property_ids, cart_value) VALUES (?, ?)";
         try{
             KeyHolder keyHolder = new GeneratedKeyHolder();
             jdbcTemplate.update(
@@ -156,6 +169,7 @@ public class DBMgr implements DBMgrDAO
                             PreparedStatement ps =
                                     connection.prepareStatement(insert_sql, new String[] {"id"});
                             ps.setString(1, "");
+                            ps.setFloat(2,0);
                             return ps;
                         }
                     },
@@ -242,6 +256,20 @@ public class DBMgr implements DBMgrDAO
     public int save(CustomerRequest c, int cartId){
         try{
             jdbcTemplate.update("INSERT INTO Customer (customer_name, username, password, email, phone_number, cart_id) VALUES (?, ?, ?, ?, ?, ?)", new Object[] {c.getName(), c.getUsername(), c.getPassword(), c.getEmail(), c.getPhone_number(), cartId});
+            return 1;
+        }
+        catch (Exception e) {
+            System.out.println(e);
+            return 0;
+        }
+    }
+
+    @Override
+    public int createSession(Customer c, String key){
+        int userID = c.getUserID();
+        String query = "UPDATE Customer SET apiKey = ? where customer_id = ?";
+        try{
+            jdbcTemplate.update(query, new Object[] {key, userID});
             return 1;
         }
         catch (Exception e) {

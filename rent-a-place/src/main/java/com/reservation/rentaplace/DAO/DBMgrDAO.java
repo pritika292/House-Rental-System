@@ -18,6 +18,8 @@ public interface DBMgrDAO {
 
     public int save(CustomerRequest c, int cartId);
 
+    public int createSession(Customer c, String key);
+
     int save(RentalProperty p);
 
     public int create(Property p, Customer u);
