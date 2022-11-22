@@ -2,6 +2,9 @@ package com.reservation.rentaplace.Controller;
 import com.nimbusds.jose.shaded.json.JSONObject;
 import com.reservation.rentaplace.Domain.*;
 import com.reservation.rentaplace.DAO.DBMgr;
+import com.reservation.rentaplace.Domain.Command.Coupon;
+import com.reservation.rentaplace.Domain.Command.CouponList;
+import com.reservation.rentaplace.Domain.Command.InvoiceGenerator;
 import com.reservation.rentaplace.Domain.Factory.FactoryProducer;
 import com.reservation.rentaplace.Domain.Factory.PropertyFactory;
 import com.reservation.rentaplace.Domain.Request.CartRequest;
@@ -25,10 +28,9 @@ import com.reservation.rentaplace.Domain.Constants;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -37,14 +39,10 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public class Controller
 {
     @Autowired
-    private DBMgr db;
+    private DBMgr db = DBMgr.getInstance();
     @Autowired
     private CustomerService service;
 
-    public Controller()
-    {
-        this.db = db;
-    }
     public String generateMD5Hashvalue(String userName)
     {
         Date dateObj = new Date();
@@ -58,11 +56,7 @@ public class Controller
         catch (NoSuchAlgorithmException e) {
             throw new IllegalArgumentException(e);
         }
-        String secretPhase = "project"; // exclusively to set for geeks
-//        System.out.println("Current Date : " + date);
-//        System.out.println("Login Id : " + userName);
-//        System.out.println("Secret Phase : " + secretPhase);
-
+        String secretPhase = "project";
         // By using the current date, userName(emailId) and
         // the secretPhase , it is generated
         byte[] hashResult
@@ -152,6 +146,64 @@ public class Controller
     public String search(@RequestBody Filter f) {
         return null;
     }
+    @PostMapping("/generateInvoice/{uname}")
+    public float generateInvoice(@RequestBody(required = false) CouponList c, @PathVariable String uname)
+    {
+        List<Float> couponDiscounts = null;
+        if (c.getCoupons()!= null)
+        {
+            couponDiscounts = new ArrayList<>();
+            ArrayList<String> coupons = checkCoupons(c.getCoupons());
+            for (int i = 0; i < coupons.size(); i++)
+            {
+                couponDiscounts.add(Constants.getCoupons().get(coupons.get(i)));
+
+            }
+        }
+        Cart customerCart = getCustomerCart(uname);
+        if (customerCart.getCartValue() == 0)
+        {
+            throw new ResourceNotFoundException("User does not have any properties in cart");
+        }
+        else
+        {
+            InvoiceGenerator generator = InvoiceGenerator.getInvoiceGenerator();
+            return generator.generateInvoice(couponDiscounts, customerCart.getCartValue());
+        }
+
+    }
+    //Private helper method to verify coupons passed in by user
+    private ArrayList<String> checkCoupons(List<Coupon> coupons)
+    {
+        HashSet<String> allCoupons = new HashSet<>();
+        for (int i = 0; i < coupons.size(); i++)
+        {
+            if (allCoupons.contains(coupons.get(i).getCouponCode()))
+            {
+                throw new InvalidRequestException("Coupon " + coupons.get(i).getCouponCode() + " already added");
+            }
+            if (!Constants.getCoupons().containsKey(coupons.get(i).getCouponCode()))
+            {
+                throw new ResourceNotFoundException("Coupon not found");
+            }
+            allCoupons.add(coupons.get(i).getCouponCode());
+        }
+       return new ArrayList<>(allCoupons);
+
+    }
+
+    //Private helper method for generateInvoice
+    private Cart getCustomerCart(String uname)
+    {
+        Customer customer = db.getCustomer(uname);
+        if (customer == null)
+        {
+            throw new ResourceNotFoundException("User not found");
+        }
+        Cart customerCart = customer.getCart();
+        return customerCart;
+    }
+
     @PostMapping("/cart/add/{apikey}")
     public String addToCart(@RequestBody CartRequest c, @PathVariable String apikey) {
         // Validate user
@@ -196,7 +248,6 @@ public class Controller
     public String removeFromCart(@RequestBody CartRequest c, @PathVariable String apikey){
         // validate user
         Customer user = db.getCustomer(c.getUsername());
-        Cart cart = user.getCart();
         if(user == null){
             throw new InvalidRequestException("Invalid user");
         }
@@ -206,6 +257,7 @@ public class Controller
         if(!user.getApiKey().equals(apikey)){
             throw new UnauthorizedException("Unauthenticated - incorrect API Key.");
         }
+        Cart cart = user.getCart();
         SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
         int idx = getDeleteCartIndex(cart,c, sdf);
         if(idx==-1){

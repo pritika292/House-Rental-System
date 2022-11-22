@@ -24,14 +24,14 @@ public class DBMgr implements DBMgrDAO
 {
     @Autowired
     public JdbcTemplate jdbcTemplate;
-//    private static DBMgr instance;
-//
-//    public static DBMgr getInstance(){
-//        if(instance == null){
-//            instance = new DBMgr();
-//        }
-//        return instance;
-//    }
+    private static DBMgr instance;
+
+    public static DBMgr getInstance(){
+        if(instance == null){
+            instance = new DBMgr();
+        }
+        return instance;
+    }
     @Override
     public Customer getCustomer(String uname)
     {
@@ -40,6 +40,7 @@ public class DBMgr implements DBMgrDAO
             Customer c = jdbcTemplate.queryForObject(query, new CustomerRowMapper(), uname);
             System.out.println("User not null");
             Cart cart = getCart(c.getUserID());
+            System.out.println(cart.getCartID());
             c.setCart(cart);
             return c;
         }
@@ -254,7 +255,7 @@ public class DBMgr implements DBMgrDAO
     @Override
     public int save(CustomerRequest c, int cartId){
         try{
-            jdbcTemplate.update("INSERT INTO Customer (customer_name, username, password, email, phone_number, cart_id, apiKey) VALUES (?, ?, ?, ?, ?, ?)", new Object[] {c.getName(), c.getUsername(), c.getPassword(), c.getEmail(), c.getPhone_number(), cartId});
+            jdbcTemplate.update("INSERT INTO Customer (customer_name, username, password, email, phone_number, cart_id) VALUES (?, ?, ?, ?, ?, ?)", new Object[] {c.getName(), c.getUsername(), c.getPassword(), c.getEmail(), c.getPhone_number(), cartId});
             return 1;
         }
         catch (Exception e) {
