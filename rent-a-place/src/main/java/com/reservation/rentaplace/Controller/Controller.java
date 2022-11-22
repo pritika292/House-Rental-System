@@ -47,11 +47,10 @@ public class Controller
     }
     public String generateMD5Hashvalue(String userName)
     {
-        LocalDate dateObj = LocalDate.now();
-        DateTimeFormatter formatter
-                = DateTimeFormatter.ofPattern("yyyyMMdd");
-        String date = dateObj.format(formatter);
-
+        Date dateObj = new Date();
+        SimpleDateFormat formatter = new SimpleDateFormat("dd-M-yyyy hh:mm:ss");
+        String date = formatter.format(dateObj);
+        System.out.println(date);
         MessageDigest md;
         try {
             md = MessageDigest.getInstance("MD5");
@@ -59,11 +58,10 @@ public class Controller
         catch (NoSuchAlgorithmException e) {
             throw new IllegalArgumentException(e);
         }
-        String secretPhase
-                = "geeks"; // exclusively to set for geeks
-        System.out.println("Current Date : " + date);
-        System.out.println("Login Id : " + userName);
-        System.out.println("Secret Phase : " + secretPhase);
+        String secretPhase = "project"; // exclusively to set for geeks
+//        System.out.println("Current Date : " + date);
+//        System.out.println("Login Id : " + userName);
+//        System.out.println("Secret Phase : " + secretPhase);
 
         // By using the current date, userName(emailId) and
         // the secretPhase , it is generated
@@ -97,8 +95,7 @@ public class Controller
         int cartId = db.createCart();
         if(cartId == -1)
             throw new RuntimeException("Error occurred");
-        String key = generateMD5Hashvalue(c.getUsername());
-        if(db.save(c, cartId, key) == 0){
+        if(db.save(c, cartId) == 0){
             throw new RuntimeException("Error occurred");
         }
         return c.getName()+ " registered successfully.";
@@ -109,7 +106,11 @@ public class Controller
             Customer c = db.getCustomer(l.getUsername());
             if (c != null) {
                 if (c.verifyPassword(l.getPassword())) {
-                    return "Login successful. API Key : " + c.getApiKey();
+                    String key = generateMD5Hashvalue(c.getUsername());
+                    if(db.createSession(c,key) == 1)
+                        return "Login successful. API Key : " + key;
+                    else
+                        throw new RuntimeException("Error occurred");
                 }
                 else
                     throw new InvalidRequestException("Login unsuccessful - invalid password");
@@ -125,6 +126,24 @@ public class Controller
 //        return "Login unsuccessful";
 
     }
+    @PostMapping("/logout/{username}/{apikey}")
+    public String logout(@PathVariable String username, @PathVariable String apikey) {
+        Customer c = db.getCustomer(username);
+        if (c != null) {
+            if(c.getApiKey() == null){
+                throw new UnauthorizedException("Please login");
+            }
+            if(!c.getApiKey().equals(apikey)){
+                throw new UnauthorizedException("Unauthenticated - incorrect API Key.");
+            }
+            if (db.endSession(c) == 1) {
+                return "Logged out successfully.";
+            } else
+                throw new RuntimeException("Error occurred.");
+        } else {
+            throw new ResourceNotFoundException("Invalid user");
+        }
+    }
     @GetMapping("/view/{location}/{dates}")
     public RentalProperty getProperty(@PathVariable String location , @PathVariable String[] dates) {
         return null;
@@ -139,6 +158,9 @@ public class Controller
         Customer user = db.getCustomer(c.getUsername());
         if(user == null){
             throw new InvalidRequestException("Invalid user");
+        }
+        if(user.getApiKey() == null){
+            throw new UnauthorizedException("Please login");
         }
         if(!user.getApiKey().equals(apikey)){
             throw new UnauthorizedException("Unauthenticated - incorrect API Key.");
@@ -177,6 +199,9 @@ public class Controller
         Cart cart = user.getCart();
         if(user == null){
             throw new InvalidRequestException("Invalid user");
+        }
+        if(user.getApiKey() == null){
+            throw new UnauthorizedException("Please login");
         }
         if(!user.getApiKey().equals(apikey)){
             throw new UnauthorizedException("Unauthenticated - incorrect API Key.");
@@ -230,6 +255,9 @@ public class Controller
         Customer user = db.getCustomer(username);
         if(user == null){
             throw new ResourceNotFoundException("Invalid User");
+        }
+        if(user.getApiKey() == null){
+            throw new UnauthorizedException("Please login");
         }
         if(!user.getApiKey().equals(apikey)){
             throw new UnauthorizedException("Unauthenticated - incorrect API Key.");
@@ -309,6 +337,9 @@ public class Controller
         Customer user =  db.getCustomer(username);
         if(user == null){
             throw new ResourceNotFoundException("Invalid user.");
+        }
+        if(user.getApiKey() == null){
+            throw new UnauthorizedException("Please login");
         }
         if(!user.getApiKey().equals(apikey)){
             throw new UnauthorizedException("Unauthenticated - incorrect API Key.");

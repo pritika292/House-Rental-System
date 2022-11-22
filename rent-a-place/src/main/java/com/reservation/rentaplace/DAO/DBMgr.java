@@ -65,6 +65,19 @@ public class DBMgr implements DBMgrDAO
         }
     }
 
+    public int endSession(Customer c){
+        int userID = c.getUserID();
+        String query = "UPDATE Customer SET apiKey = ? where customer_id = ?";
+        try{
+            jdbcTemplate.update(query, new Object[]{null, userID});
+        }
+        catch (Exception e){
+            System.out.println(e);
+            return -1;
+        }
+        return 1;
+    }
+
     @Override
     public RentalProperty getProperty(String location, String[] date) {
         return null;
@@ -239,9 +252,23 @@ public class DBMgr implements DBMgrDAO
         }
     }
     @Override
-    public int save(CustomerRequest c, int cartId, String key){
+    public int save(CustomerRequest c, int cartId){
         try{
-            jdbcTemplate.update("INSERT INTO Customer (customer_name, username, password, email, phone_number, cart_id, apiKey) VALUES (?, ?, ?, ?, ?, ?, ?)", new Object[] {c.getName(), c.getUsername(), c.getPassword(), c.getEmail(), c.getPhone_number(), cartId, key});
+            jdbcTemplate.update("INSERT INTO Customer (customer_name, username, password, email, phone_number, cart_id, apiKey) VALUES (?, ?, ?, ?, ?, ?)", new Object[] {c.getName(), c.getUsername(), c.getPassword(), c.getEmail(), c.getPhone_number(), cartId});
+            return 1;
+        }
+        catch (Exception e) {
+            System.out.println(e);
+            return 0;
+        }
+    }
+
+    @Override
+    public int createSession(Customer c, String key){
+        int userID = c.getUserID();
+        String query = "UPDATE Customer SET apiKey = ? where customer_id = ?";
+        try{
+            jdbcTemplate.update(query, new Object[] {key, userID});
             return 1;
         }
         catch (Exception e) {
