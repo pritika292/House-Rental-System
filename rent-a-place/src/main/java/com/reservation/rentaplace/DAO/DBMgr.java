@@ -17,13 +17,21 @@ import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 @Repository
 public class DBMgr implements DBMgrDAO
 {
     @Autowired
-    JdbcTemplate jdbcTemplate;
-
+    public JdbcTemplate jdbcTemplate;
+//    private static DBMgr instance;
+//
+//    public static DBMgr getInstance(){
+//        if(instance == null){
+//            instance = new DBMgr();
+//        }
+//        return instance;
+//    }
     @Override
     public Customer getCustomer(String uname)
     {
@@ -33,6 +41,22 @@ public class DBMgr implements DBMgrDAO
             System.out.println("User not null");
             Cart cart = getCart(c.getUserID());
             System.out.println(cart.getCartID());
+            c.setCart(cart);
+            return c;
+        }
+        catch (Exception e) {
+            System.out.println("User is null");
+            return null;
+        }
+    }
+    @Override
+    public Customer getCustomerByID(int uid)
+    {
+        String query = "select * from CUSTOMER WHERE customer_id = ?";
+        try{
+            Customer c = jdbcTemplate.queryForObject(query, new CustomerRowMapper(), uid);
+            System.out.println("User not null");
+            Cart cart = getCart(c.getUserID());
             c.setCart(cart);
             return c;
         }
@@ -82,6 +106,30 @@ public class DBMgr implements DBMgrDAO
         try{
             String property_type = (String)jdbcTemplate.queryForObject(query, String.class, property_id);
             return property_type;
+        }
+        catch (Exception e){
+            System.out.println(e);
+            return null;
+        }
+    }
+    public ArrayList<Reservation> getReservations(){
+        ArrayList<Reservation> reservations = new ArrayList<Reservation>();
+        String query = "SELECT * from Reservation";
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
+            List<ReservationRow> p = jdbcTemplate.query(query, new ReservationRowMapper());
+            for(int i=0;i<p.size();i++){
+                Reservation r = new Reservation();
+                Customer c = getCustomerByID(p.get(i).getCustomer_id());
+                RentalProperty property = getProperty(p.get(i).getProperty_id());
+                r.setConfirmationNumber((p.get(i).getReservation_id()));
+                r.setCustomer(c);
+                r.setCheckinDate(sdf.parse(p.get(i).getCheckin_date()));
+                r.setCheckoutDate(sdf.parse(p.get(i).getCheckout_date()));
+                r.setProperty(property);
+                reservations.add(r);
+            }
+            return reservations;
         }
         catch (Exception e){
             System.out.println(e);

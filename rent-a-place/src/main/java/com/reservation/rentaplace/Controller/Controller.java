@@ -1,4 +1,5 @@
 package com.reservation.rentaplace.Controller;
+import com.nimbusds.jose.shaded.json.JSONObject;
 import com.reservation.rentaplace.Domain.*;
 import com.reservation.rentaplace.DAO.DBMgr;
 import com.reservation.rentaplace.Domain.Command.CouponList;
@@ -17,9 +18,14 @@ import com.reservation.rentaplace.Exception.InvalidRequestException;
 import com.reservation.rentaplace.Exception.ResourceNotFoundException;
 import com.reservation.rentaplace.Service.CustomerService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.reservation.rentaplace.Domain.Constants;
 
+import javax.swing.text.html.parser.Entity;
+import java.lang.reflect.Array;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -33,7 +39,7 @@ public class Controller
     @Autowired
     private CustomerService service;
 
-    public Controller(DBMgr db)
+    public Controller()
     {
         this.db = db;
     }
@@ -155,6 +161,80 @@ public class Controller
             throw new RuntimeException("Error occurred, cannot add to cart");
     }
 
+    @PostMapping("/cart/remove/")
+    public String removeFromCart(@RequestBody CartRequest c){
+        // validate user
+        Customer user = db.getCustomer(c.getUsername());
+        Cart cart = user.getCart();
+        if(user == null){
+            throw new InvalidRequestException("Invalid user");
+        }
+        SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
+        int idx = getDeleteCartIndex(cart,c, sdf);
+        if(idx==-1){
+            throw new ResourceNotFoundException("Property does not exist in cart");
+        }
+        long days = cart.getDays(cart.getCheckinDate().get(idx), cart.getCheckoutDate().get(idx));
+        float updatedCartValue = cart.getCartValue() - cart.getProperty().get(idx).getPrice_per_night()*days;
+        cart.getProperty().remove(idx);
+        cart.getCheckinDate().remove(idx);
+        cart.getCheckoutDate().remove(idx);
+
+        cart.setCartValue(updatedCartValue);
+        user.setCart(cart);
+        int updateResult = db.updateCart(user);
+        if(updateResult == 1)
+            return "Removed from cart successfully";
+        else
+            throw new RuntimeException("Error occurred, cannot remove from cart");
+    }
+
+    private int getDeleteCartIndex(Cart cart, CartRequest c, SimpleDateFormat sdf){
+        ArrayList<RentalProperty> properties = cart.getProperty();
+        ArrayList<Date> inDates = cart.getCheckinDate();
+        ArrayList<Date> outDates = cart.getCheckoutDate();
+        int index = -1;
+        Date inDate = null;
+        Date outDate = null;
+        try{
+            inDate = sdf.parse(c.getCheckinDate());
+            outDate = sdf.parse(c.getCheckoutDate());
+        }
+        catch(Exception e){
+            System.out.println(e);
+        }
+        for(int i=0;i<properties.size();i++){
+            if(properties.get(i).getProperty_id() == c.getPropertyID()){
+                if(inDates.get(i).compareTo(inDate) == 0 && outDates.get(i).compareTo(outDate)==0){
+                    index =i;
+                    break;
+                }
+            }
+        }
+        return index;
+    }
+    @GetMapping(path = "/cart/view/{username}", produces= MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Object> viewCart(@PathVariable String username) {
+        Customer user = db.getCustomer(username);
+        Cart cart = user.getCart();
+        SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
+        List<JSONObject> entities = new ArrayList<JSONObject>();
+        for (int i=0;i<cart.getProperty().size();i++) {
+            JSONObject entity = new JSONObject();
+            entity.put("Property", cart.getProperty().get(i));
+            String inDate = sdf.format(cart.getCheckinDate().get(i));
+            entity.put("Checkin date", inDate);
+            String outDate = sdf.format(cart.getCheckoutDate().get(i));
+            entity.put("Checkout date", outDate);
+            entities.add(entity);
+        }
+        JSONObject price = new JSONObject();
+        price.put("Cart value", cart.getCartValue());
+        entities.add(price);
+
+        return new ResponseEntity<Object>(entities, HttpStatus.OK);
+    }
+
     public void validateProperty(int propertyID){
         String property_type = db.checkProperty(propertyID);
         if(property_type == null){
@@ -191,9 +271,15 @@ public class Controller
         }
         return null;
     }
-    @PostMapping("/reserve")
-    public String create(Property p, Customer u) {
-        return null;
+    @PostMapping("/reserve/{username}")
+    public String create(@PathVariable String username) {
+        Customer c = db.getCustomer(username);
+        Cart cart = c.getCart();
+        ArrayList<Reservation> r = db.getReservations();
+        if(cart.verifyCart(r)){
+            return "Verified cart";
+        }
+        return "Invalid cart";
     }
     @PostMapping("/rate/{confirmationNumber}/{rating}")
     public static void rate_property(@PathVariable String confirmationNumber , @PathVariable Float rating) {
