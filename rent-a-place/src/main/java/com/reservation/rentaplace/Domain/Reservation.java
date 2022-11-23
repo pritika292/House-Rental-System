@@ -1,6 +1,8 @@
 package com.reservation.rentaplace.Domain;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+
 import lombok.Setter;
 
 import java.util.Date;
@@ -15,3 +17,4 @@ public class Reservation
     private Date checkinDate;
     private Date checkoutDate;
 }
+

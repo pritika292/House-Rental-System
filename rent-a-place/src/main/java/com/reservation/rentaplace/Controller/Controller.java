@@ -11,6 +11,7 @@ import com.reservation.rentaplace.Domain.Factory.PropertyFactory;
 import com.reservation.rentaplace.Domain.Request.CartRequest;
 import com.reservation.rentaplace.Domain.Request.CustomerRequest;
 import com.reservation.rentaplace.Domain.Request.HostPropertyRequest;
+import com.reservation.rentaplace.Domain.Request.ReservationRequest;
 import com.reservation.rentaplace.Domain.Validator.DateValidator;
 import com.reservation.rentaplace.Domain.Validator.DateValidatorUsingDateFormat;
 import com.reservation.rentaplace.Domain.Login;
@@ -28,6 +29,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.reservation.rentaplace.Domain.Constants;
+import com.reservation.rentaplace.Domain.Reservation;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -436,15 +438,22 @@ public class Controller
         }
         return null;
     }
-    @PostMapping("/reserve/{username}")
-    public String create(@PathVariable String username) {
-        Customer c = db.getCustomer(username);
-        Cart cart = c.getCart();
-        ArrayList<Reservation> r = db.getReservations();
-        if(cart.verifyCart(r)){
-            return "Verified cart";
-        }
-        return "Invalid cart";
+
+    @PostMapping("/reserve")
+    public String createReservation(@RequestBody ReservationRequest r) {
+        Customer user = db.getCustomer(r.getUsername());
+        int userId = user.getUserID();
+        Cart userCart = db.getCart(userId);
+        ArrayList<Reservation> reservation = db.getReservations();
+        if(!userCart.verifyCart(reservation)){
+            return "Invalid cart";}
+        Reservation reserve  = new Reservation();
+        int result = db.updateReserves(reserve);
+        if(result == 1)
+            return "Reserved successfully";
+        else
+            throw new RuntimeException("Error occurred, cannot add to reserve");
+
     }
     @PostMapping("/rate/{confirmationNumber}/{rating}")
     public static void rate_property(@PathVariable String confirmationNumber , @PathVariable Float rating) {
