@@ -6,6 +6,7 @@ import com.reservation.rentaplace.Domain.Factory.PropertyFactory;
 import com.reservation.rentaplace.Domain.Request.CartRequest;
 import com.reservation.rentaplace.Domain.Request.CustomerRequest;
 import com.reservation.rentaplace.Domain.Request.HostPropertyRequest;
+import com.reservation.rentaplace.Domain.Request.ReservationRequest;
 import com.reservation.rentaplace.Domain.Validator.DateValidator;
 import com.reservation.rentaplace.Domain.Validator.DateValidatorUsingDateFormat;
 import com.reservation.rentaplace.Domain.Property;
@@ -17,8 +18,10 @@ import com.reservation.rentaplace.Service.CustomerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import com.reservation.rentaplace.Domain.Constants;
+import com.reservation.rentaplace.Domain.Reservation;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 
 @RestController
@@ -151,8 +154,16 @@ public class Controller
         return null;
     }
     @PostMapping("/reserve")
-    public String create(Property p, Customer u) {
-        return null;
+    public String createReservation(@RequestBody ReservationRequest r) {
+        Customer user = db.getCustomer(r.getUsername());
+        int userId = user.getUserID();
+        Cart userCart = db.getCart(userId);
+        Reservation reserve  = new Reservation(userCart,userId);
+        int result = db.updateReserves(reserve);
+        if(result == 1)
+            return "Added to Reserve successfully";
+        else
+            throw new RuntimeException("Error occurred, cannot add to reserve");
     }
     @PostMapping("/rate/{confirmationNumber}/{rating}")
     public static void rate_property(@PathVariable String confirmationNumber , @PathVariable Float rating) {

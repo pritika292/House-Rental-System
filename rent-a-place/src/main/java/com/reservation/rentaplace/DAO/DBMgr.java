@@ -161,6 +161,22 @@ public class DBMgr implements DBMgrDAO
             return null;
         }
     }
+
+    public Reservation getReservation(int reservation_id){
+        try{
+            ReservationRow reservationRow  = jdbcTemplate.queryForObject("SELECT * from Reservation where reservation_id = (?)", new ReservationRowMapper(), reservation_id);
+            Reservation r = new Reservation();
+            int user_id = reservationRow.getCustomer_id();
+            Cart c = getCart(user_id);
+            r.setCart(c);
+            r.setUserId(user_id);
+            return r;
+        }catch(Exception e){
+            System.out.println(e);
+            return null;
+        }
+    }
+
     public int updateCart(Customer c){
         String update_sql = "";
         try{
@@ -189,6 +205,31 @@ public class DBMgr implements DBMgrDAO
             return -1;
         }
     }
+
+    public int updateReserves(Reservation r){
+        try{
+            int userID = r.getUserId();
+            Cart cart = r.getCart();
+            ArrayList<RentalProperty> property_list = cart.getProperty();
+            ArrayList<Date> checkinDates = cart.getCheckinDate();
+            ArrayList<Date> checkoutDates = cart.getCheckoutDate();
+
+            int size = property_list.size();
+            for(int i = 0; i < size; i++){
+                SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
+                int propertyId = property_list.get(i).getProperty_id();
+                String checkinDate = sdf.format(checkinDates.get(i));
+                String checkoutDate = sdf.format(checkoutDates.get(i));
+                //jdbcTemplate.update("UPDATE Cart SET property_ids = (?), checkin_date = (?), checkout_date = (?), cart_value=(?) WHERE cart_id = (?)", new Object[] {properties, checkinDates, checkoutDates, cart.getCartValue(), cart.getCartID()});
+                jdbcTemplate.update("UPDATE reservation SET property_id = (?), customer_id = (?), checkin_date = (?), checkout_date = (?)", new Object[] {propertyId,userID,checkinDate,checkoutDate});
+            }
+            return 1;
+        }catch (Exception e){
+            System.out.println(e);
+            return -1;
+        }
+    }
+
     @Override
     public int save(CustomerRequest c, int cartId){
         try{
