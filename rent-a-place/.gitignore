@@ -1,1 +1,3 @@
-target/
+/Users/sailesh/Dropbox/OOAD_Project/courseproject-cs6359-f22-group9/rent-a-place/.gitignore
+**/target/
+**/.DS_Store
