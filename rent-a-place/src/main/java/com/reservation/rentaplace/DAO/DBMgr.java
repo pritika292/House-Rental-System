@@ -17,19 +17,44 @@ import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 @Repository
 public class DBMgr implements DBMgrDAO
 {
     @Autowired
-    JdbcTemplate jdbcTemplate;
+    public JdbcTemplate jdbcTemplate;
+    private static DBMgr instance;
 
+    public static DBMgr getInstance(){
+        if(instance == null){
+            instance = new DBMgr();
+        }
+        return instance;
+    }
     @Override
     public Customer getCustomer(String uname)
     {
         String query = "select * from CUSTOMER WHERE username = ?";
         try {
             Customer c = jdbcTemplate.queryForObject(query, new CustomerRowMapper(), uname);
+            System.out.println("User not null");
+            Cart cart = getCart(c.getUserID());
+            System.out.println(cart.getCartID());
+            c.setCart(cart);
+            return c;
+        }
+        catch (Exception e) {
+            System.out.println("User is null");
+            return null;
+        }
+    }
+    @Override
+    public Customer getCustomerByID(int uid)
+    {
+        String query = "select * from CUSTOMER WHERE customer_id = ?";
+        try{
+            Customer c = jdbcTemplate.queryForObject(query, new CustomerRowMapper(), uid);
             System.out.println("User not null");
             Cart cart = getCart(c.getUserID());
             c.setCart(cart);
@@ -39,6 +64,19 @@ public class DBMgr implements DBMgrDAO
             System.out.println("User is null");
             return null;
         }
+    }
+
+    public int endSession(Customer c){
+        int userID = c.getUserID();
+        String query = "UPDATE Customer SET apiKey = ? where customer_id = ?";
+        try{
+            jdbcTemplate.update(query, new Object[]{null, userID});
+        }
+        catch (Exception e){
+            System.out.println(e);
+            return -1;
+        }
+        return 1;
     }
 
     @Override
@@ -87,6 +125,30 @@ public class DBMgr implements DBMgrDAO
             return null;
         }
     }
+    public ArrayList<Reservation> getReservations(){
+        ArrayList<Reservation> reservations = new ArrayList<Reservation>();
+        String query = "SELECT * from Reservation";
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
+            List<ReservationRow> p = jdbcTemplate.query(query, new ReservationRowMapper());
+            for(int i=0;i<p.size();i++){
+                Reservation r = new Reservation();
+                Customer c = getCustomerByID(p.get(i).getCustomer_id());
+                RentalProperty property = getProperty(p.get(i).getProperty_id());
+                r.setConfirmationNumber((p.get(i).getReservation_id()));
+                r.setCustomer(c);
+                r.setCheckinDate(sdf.parse(p.get(i).getCheckin_date()));
+                r.setCheckoutDate(sdf.parse(p.get(i).getCheckout_date()));
+                r.setProperty(property);
+                reservations.add(r);
+            }
+            return reservations;
+        }
+        catch (Exception e){
+            System.out.println(e);
+            return null;
+        }
+    }
     @Override
     public Reservation getReservation(String uname, String property_id)
     {
@@ -98,7 +160,7 @@ public class DBMgr implements DBMgrDAO
         return 0;
     }
     public int createCart(){
-        String insert_sql = "INSERT INTO Cart (property_ids, cart_value) VALUES (?)";
+        String insert_sql = "INSERT INTO Cart (property_ids, cart_value) VALUES (?, ?)";
         try{
             KeyHolder keyHolder = new GeneratedKeyHolder();
             jdbcTemplate.update(
@@ -107,6 +169,7 @@ public class DBMgr implements DBMgrDAO
                             PreparedStatement ps =
                                     connection.prepareStatement(insert_sql, new String[] {"id"});
                             ps.setString(1, "");
+                            ps.setFloat(2,0);
                             return ps;
                         }
                     },
@@ -234,6 +297,20 @@ public class DBMgr implements DBMgrDAO
     public int save(CustomerRequest c, int cartId){
         try{
             jdbcTemplate.update("INSERT INTO Customer (customer_name, username, password, email, phone_number, cart_id) VALUES (?, ?, ?, ?, ?, ?)", new Object[] {c.getName(), c.getUsername(), c.getPassword(), c.getEmail(), c.getPhone_number(), cartId});
+            return 1;
+        }
+        catch (Exception e) {
+            System.out.println(e);
+            return 0;
+        }
+    }
+
+    @Override
+    public int createSession(Customer c, String key){
+        int userID = c.getUserID();
+        String query = "UPDATE Customer SET apiKey = ? where customer_id = ?";
+        try{
+            jdbcTemplate.update(query, new Object[] {key, userID});
             return 1;
         }
         catch (Exception e) {

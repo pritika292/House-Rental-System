@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import java.util.Date;
 
 @Getter
 @Setter
@@ -11,7 +12,9 @@ import lombok.Setter;
 @AllArgsConstructor
 public class Reservation
 {
-    private Cart cart;
-    private int userId;
-
+    private Customer customer;
+    private int confirmationNumber;
+    private RentalProperty Property;
+    private Date checkinDate;
+    private Date checkoutDate;
 }
