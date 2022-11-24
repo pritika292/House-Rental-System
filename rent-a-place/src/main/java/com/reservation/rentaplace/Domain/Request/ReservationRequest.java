@@ -10,6 +10,6 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ReservationRequest {
-    Integer cartID;
+    //Integer cartID;
     String username;
 }
