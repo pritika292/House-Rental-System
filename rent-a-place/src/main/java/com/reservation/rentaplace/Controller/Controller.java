@@ -18,6 +18,8 @@ import com.reservation.rentaplace.Exception.InvalidRequestException;
 import com.reservation.rentaplace.Exception.ResourceNotFoundException;
 import com.reservation.rentaplace.Exception.UnauthorizedException;
 import com.reservation.rentaplace.Service.CustomerService;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -34,49 +36,51 @@ import java.util.HashSet;
 import java.util.List;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-
+@Getter
+@Setter
 @RestController
 public class Controller
 {
     @Autowired
     private DBMgr db = DBMgr.getInstance();
+
     @Autowired
     private CustomerService service;
 
-    public String generateMD5Hashvalue(String userName)
-    {
-        Date dateObj = new Date();
-        SimpleDateFormat formatter = new SimpleDateFormat("dd-M-yyyy hh:mm:ss");
-        String date = formatter.format(dateObj);
-        System.out.println(date);
-        MessageDigest md;
-        try {
-            md = MessageDigest.getInstance("MD5");
-        }
-        catch (NoSuchAlgorithmException e) {
-            throw new IllegalArgumentException(e);
-        }
-        String secretPhase = "project";
-        // By using the current date, userName(emailId) and
-        // the secretPhase , it is generated
-        byte[] hashResult
-                = md.digest((date + userName + secretPhase)
-                .getBytes(UTF_8));
-        // convert the value to hex
-        String password = bytesToHex(hashResult);
-        System.out.println("Generated password.."
-                + password);
-
-        return password;
-    }
-    private String bytesToHex(byte[] bytes)
-    {
-        StringBuilder sb = new StringBuilder();
-        for (byte b : bytes) {
-            sb.append(String.format("%02x", b));
-        }
-        return sb.toString();
-    }
+//    public String generateMD5Hashvalue(String userName)
+//    {
+//        Date dateObj = new Date();
+//        SimpleDateFormat formatter = new SimpleDateFormat("dd-M-yyyy hh:mm:ss");
+//        String date = formatter.format(dateObj);
+//        System.out.println(date);
+//        MessageDigest md;
+//        try {
+//            md = MessageDigest.getInstance("MD5");
+//        }
+//        catch (NoSuchAlgorithmException e) {
+//            throw new IllegalArgumentException(e);
+//        }
+//        String secretPhase = "project";
+//        // By using the current date, userName(emailId) and
+//        // the secretPhase , it is generated
+//        byte[] hashResult
+//                = md.digest((date + userName + secretPhase)
+//                .getBytes(UTF_8));
+//        // convert the value to hex
+//        String password = bytesToHex(hashResult);
+//        System.out.println("Generated password.."
+//                + password);
+//
+//        return password;
+//    }
+//    private String bytesToHex(byte[] bytes)
+//    {
+//        StringBuilder sb = new StringBuilder();
+//        for (byte b : bytes) {
+//            sb.append(String.format("%02x", b));
+//        }
+//        return sb.toString();
+//    }
     @PostMapping("/register")
     public String save(@RequestBody CustomerRequest c) {
         if(!c.verifyUsername())
@@ -85,6 +89,8 @@ public class Controller
             throw new InvalidRequestException("Invalid email id");
         if(!c.verifyPhoneNumber())
             throw new InvalidRequestException("Invalid phone number");
+        if(c.getPassword() == "")
+            throw new InvalidRequestException("Password cannot empty. Please enter valid password.");
 
         int cartId = db.createCart();
         if(cartId == -1)
@@ -100,7 +106,8 @@ public class Controller
             Customer c = db.getCustomer(l.getUsername());
             if (c != null) {
                 if (c.verifyPassword(l.getPassword())) {
-                    String key = generateMD5Hashvalue(c.getUsername());
+                    String key = db.generateMD5Hashvalue(c.getUsername());
+                    c.setApiKey(key);
                     if(db.createSession(c,key) == 1)
                         return "Login successful. API Key : " + key;
                     else
