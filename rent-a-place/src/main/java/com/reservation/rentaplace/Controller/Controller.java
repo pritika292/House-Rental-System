@@ -47,40 +47,6 @@ public class Controller
     @Autowired
     private CustomerService service;
 
-//    public String generateMD5Hashvalue(String userName)
-//    {
-//        Date dateObj = new Date();
-//        SimpleDateFormat formatter = new SimpleDateFormat("dd-M-yyyy hh:mm:ss");
-//        String date = formatter.format(dateObj);
-//        System.out.println(date);
-//        MessageDigest md;
-//        try {
-//            md = MessageDigest.getInstance("MD5");
-//        }
-//        catch (NoSuchAlgorithmException e) {
-//            throw new IllegalArgumentException(e);
-//        }
-//        String secretPhase = "project";
-//        // By using the current date, userName(emailId) and
-//        // the secretPhase , it is generated
-//        byte[] hashResult
-//                = md.digest((date + userName + secretPhase)
-//                .getBytes(UTF_8));
-//        // convert the value to hex
-//        String password = bytesToHex(hashResult);
-//        System.out.println("Generated password.."
-//                + password);
-//
-//        return password;
-//    }
-//    private String bytesToHex(byte[] bytes)
-//    {
-//        StringBuilder sb = new StringBuilder();
-//        for (byte b : bytes) {
-//            sb.append(String.format("%02x", b));
-//        }
-//        return sb.toString();
-//    }
     @PostMapping("/register")
     public String save(@RequestBody CustomerRequest c) {
         if(!c.verifyUsername())
