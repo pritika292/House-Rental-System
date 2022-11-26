@@ -182,7 +182,7 @@ public class Controller
         // Validate user
         Customer user = db.getCustomer(c.getUsername());
         if(user == null){
-            throw new InvalidRequestException("Invalid user");
+            throw new ResourceNotFoundException("Invalid user");
         }
         if(user.getApiKey() == null){
             throw new UnauthorizedException("Please login");
