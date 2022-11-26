@@ -1,6 +1,7 @@
 package com.reservation.rentaplace.mapper;
 
 import com.reservation.rentaplace.DAO.DBMgr;
+import com.reservation.rentaplace.Domain.Constants;
 import com.reservation.rentaplace.Domain.Factory.FactoryProducer;
 import com.reservation.rentaplace.Domain.Factory.PropertyFactory;
 import com.reservation.rentaplace.Domain.RentalProperty;
@@ -22,19 +23,6 @@ public class SearchRequestPropertyRowMapper implements RowMapper<RentalProperty>
 
     private final HashMap<String, String> getPropertyClass = new HashMap<>();
 
-    public SearchRequestPropertyRowMapper()
-    {
-        //this.producer = producer;
-        this.db = db;
-        getPropertyClass.put("villa", "FirstClass");
-        getPropertyClass.put("beachHouse", "FirstClass");
-        getPropertyClass.put("resort", "FirstClass");
-        getPropertyClass.put("apartment", "BusinessClass");
-        getPropertyClass.put("house", "BusinessClass");
-        getPropertyClass.put("studio", "BusinessClass");
-        getPropertyClass.put("motel", "EconomyClass");
-    }
-
     @Override
     public RentalProperty mapRow(ResultSet rs, int rowNum) throws SQLException {
 
@@ -44,9 +32,9 @@ public class SearchRequestPropertyRowMapper implements RowMapper<RentalProperty>
 
         String propertyType = rs.getString("property_type");
         // Validation
-        if (getPropertyClass.containsKey(propertyType)) {
-            producer = new FactoryProducer();
-            PropertyFactory factory = producer.getFactory(getPropertyClass.get(propertyType));
+        if(Constants.getPropertyClass().containsKey(propertyType)){
+            FactoryProducer producer = FactoryProducer.getInstance();
+            PropertyFactory factory = producer.getFactory(Constants.getPropertyClass().get(propertyType));
             RentalProperty property = factory.getProperty(propertyType);
 
             property.setProperty_id(rs.getInt("property_id"));
