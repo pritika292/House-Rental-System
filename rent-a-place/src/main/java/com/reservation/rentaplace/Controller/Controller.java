@@ -1,5 +1,6 @@
 package com.reservation.rentaplace.Controller;
 import com.nimbusds.jose.shaded.json.JSONObject;
+import com.reservation.rentaplace.Criteria.*;
 import com.reservation.rentaplace.Domain.*;
 import com.reservation.rentaplace.DAO.DBMgr;
 import com.reservation.rentaplace.Domain.Command.Coupon;
@@ -18,6 +19,7 @@ import com.reservation.rentaplace.Exception.InvalidRequestException;
 import com.reservation.rentaplace.Exception.ResourceNotFoundException;
 import com.reservation.rentaplace.Exception.UnauthorizedException;
 import com.reservation.rentaplace.Service.CustomerService;
+import com.reservation.rentaplace.Service.SearchPropertyService;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +31,7 @@ import com.reservation.rentaplace.Domain.Constants;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -46,6 +49,9 @@ public class Controller
 
     @Autowired
     private CustomerService service;
+
+    @Autowired
+    private SearchPropertyService searchPropertyService;
 
     @PostMapping("/register")
     public String save(@RequestBody CustomerRequest c) {
@@ -111,10 +117,98 @@ public class Controller
             throw new ResourceNotFoundException("Invalid user");
         }
     }
-    @GetMapping("/view/{location}/{dates}")
-    public RentalProperty getProperty(@PathVariable String location , @PathVariable String[] dates) {
-        return null;
+
+    @PostMapping("/view")
+    public Object getProperty(@RequestBody SearchPropertyRequest searchPropertyRequest) throws ParseException {
+        if(searchPropertyRequest.getCity()!=null && searchPropertyRequest.getCheckIn()!=null && searchPropertyRequest.getCheckOut()!=null) {
+
+            //Validate the check-in and check-out date
+            SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
+            String result = validateInputDates(searchPropertyRequest.getCheckIn(), searchPropertyRequest.getCheckOut(), sdf);
+
+            if(result != null){
+                throw new InvalidRequestException(result);
+            }
+
+            //Get the list of properties based on city
+            List<RentalProperty> propertiesList = db.getProperties(searchPropertyRequest);
+
+            //Get the reservations from reservation table
+            List<Reservation> reservationsList = db.getReservations();
+
+            SearchPropertyService searchPropertyService = new SearchPropertyService();
+            searchPropertyService.assignPropertiesList(propertiesList,sdf.parse(searchPropertyRequest.getCheckIn()), sdf.parse(searchPropertyRequest.getCheckOut()));
+
+            //Verify Properties with Reservation Table
+            propertiesList = searchPropertyService.verifyProperties(reservationsList);
+
+            //Setting the owner_name, owner_email and owner_phone_number
+            for(RentalProperty rentalProperty:propertiesList) {
+                Customer customer = db.getCustomerByID(rentalProperty.getOwner_id());
+                if (customer != null)
+                {
+                    rentalProperty.setOwner_name(customer.getName());
+                    rentalProperty.setOwner_email(customer.getEmail());
+                    rentalProperty.setOwner_phone_number(customer.getPhone_number());
+                }
+                else
+                {
+                    throw new ResourceNotFoundException("User not found");
+                }
+
+            }
+
+            //Filter the Properties List based on filters provided
+            List<RentalProperty> filteredRentalProperties = new ArrayList<>();
+
+            Criteria criteriaAverageRating = new CriteriaAverageRating();
+            Criteria criteriaCarpetArea = new CriteriaCarpetArea();
+            Criteria criteriaNumberOfBathrooms = new CriteriaNumberOfBathrooms();
+            Criteria criteriaNumberOfBedrooms = new CriteriaNumberOfBedrooms();
+            Criteria criteriaPetFriendly = new CriteriaPetFriendly();
+            Criteria criteriaPricePerNight = new CriteriaPricePerNight();
+            Criteria criteriaPropertyType = new CriteriaPropertyType();
+            Criteria criteriaWifiAvailability = new CriteriaWifiAvailability();
+
+            if(searchPropertyRequest.getAverage_rating() != null)
+            {
+                propertiesList = criteriaAverageRating.meetCriteria(propertiesList, searchPropertyRequest);
+            }
+            if(searchPropertyRequest.getCarpet_area() != null)
+            {
+                propertiesList = criteriaCarpetArea.meetCriteria(propertiesList, searchPropertyRequest);
+            }
+            if(searchPropertyRequest.getNum_baths() != null)
+            {
+                propertiesList = criteriaNumberOfBathrooms.meetCriteria(propertiesList, searchPropertyRequest);
+            }
+            if(searchPropertyRequest.getNum_bedrooms() != null)
+            {
+                propertiesList = criteriaNumberOfBedrooms.meetCriteria(propertiesList, searchPropertyRequest);
+            }
+            if(searchPropertyRequest.getPet_friendly() != null)
+            {
+                propertiesList = criteriaPetFriendly.meetCriteria(propertiesList, searchPropertyRequest);
+            }
+            if(searchPropertyRequest.getPrice_per_night() != null)
+            {
+                propertiesList = criteriaPricePerNight.meetCriteria(propertiesList, searchPropertyRequest);
+            }
+            if(searchPropertyRequest.getProperty_type() != null)
+            {
+                propertiesList = criteriaPropertyType.meetCriteria(propertiesList, searchPropertyRequest);
+            }
+            if(searchPropertyRequest.getWifi_avail() != null)
+            {
+                propertiesList = criteriaWifiAvailability.meetCriteria(propertiesList, searchPropertyRequest);
+            }
+
+            return propertiesList;
+        }
+        return "City or Check-In or Check-Out date is missing";
     }
+
+
     @GetMapping("/search/")
     public String search(@RequestBody Filter f) {
         return null;

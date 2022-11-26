@@ -123,8 +123,21 @@ public class DBMgr implements DBMgrDAO
     }
 
     @Override
-    public RentalProperty getProperty(String location, String[] date) {
-        return null;
+    public List<RentalProperty> getProperties(SearchPropertyRequest searchPropertyRequest)
+    {
+        String query = "select * from Property WHERE city = ? and availability='1'";
+        List<RentalProperty> rentalProperty =  null;
+        try {
+            rentalProperty = jdbcTemplate.query(query, new SearchRequestPropertyRowMapper(), searchPropertyRequest.getCity());
+            jdbcTemplate.query(query, new PropertyRowMapper(), searchPropertyRequest.getCity());
+
+            System.out.println("not null");
+            return rentalProperty;
+        }
+        catch (Exception e) {
+            System.out.println("is null");
+            return null;
+        }
     }
 
     @Override
