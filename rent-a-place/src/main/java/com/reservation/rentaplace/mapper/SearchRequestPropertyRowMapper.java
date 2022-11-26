@@ -16,12 +16,6 @@ import java.util.List;
 
 public class SearchRequestPropertyRowMapper implements RowMapper<RentalProperty> {
 
-    @Autowired
-    private DBMgr db;
-
-    private FactoryProducer producer;
-
-    private final HashMap<String, String> getPropertyClass = new HashMap<>();
 
     @Override
     public RentalProperty mapRow(ResultSet rs, int rowNum) throws SQLException {
