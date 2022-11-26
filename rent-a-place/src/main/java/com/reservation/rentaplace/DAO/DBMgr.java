@@ -355,6 +355,8 @@ public class DBMgr implements DBMgrDAO
         }
     }
 
+
+
     @Override
     public int createSession(Customer c, String key){
         int userID = c.getUserID();

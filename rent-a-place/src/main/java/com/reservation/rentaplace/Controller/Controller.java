@@ -256,6 +256,9 @@ public class Controller
        return new ArrayList<>(allCoupons);
 
     }
+
+
+
     @PostMapping("getPastReservations/owner/{uname}/{apiKey}")
     public ResponseEntity<Object> getReservationofOwner(@PathVariable String uname, @PathVariable String apiKey)
     {
@@ -268,10 +271,10 @@ public class Controller
         List<Reservation> reservations = db.getReservations();
         for (Reservation r: reservations)
         {
-            if (r.getProperty().getOwner_id() == user.getUserID())
-            {
-                userReservations.add(r);
-            }
+           if (r.getProperty().getOwner_id() == user.getUserID())
+           {
+               userReservations.add(r);
+           }
         }
         List<JSONObject> entities = new ArrayList<>();
         SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
@@ -287,6 +290,73 @@ public class Controller
         }
         return new ResponseEntity<Object>(entities, HttpStatus.OK);
     }
+    //Below methods are for reference for Bhanuprakash - Sailesh Sriram
+
+//    @PostMapping("getPastReservations/renter/{uname}/{apiKey}")
+//    public List<UserReservation> getReservationforRenter(@PathVariable String uname, @PathVariable String apiKey)
+//    {
+//        Customer user = authenticateUser(uname, apiKey);
+//        if (user == null)
+//        {
+//            throw new UnauthorizedException("Unauthorized or Invalid user");
+//        }
+//
+//        List<Reservation> reservations = db.getReservations();
+//        HashMap<Integer, UserReservation> groupedReservations = getRenterReservations(reservations);
+//        List<UserReservation> userReservations = new ArrayList<>();
+//        for (Integer key: groupedReservations.keySet())
+//        {
+//            if (groupedReservations.get(key).getCustomer().getUserID() == user.getUserID())
+//            {
+//                userReservations.add(groupedReservations.get(key));
+//            }
+//        }
+//        return userReservations;
+//    }
+//
+//    private HashMap<Integer, UserReservation> getRenterReservations(List<Reservation> reservations)
+//    {
+//        UserReservation u1 = null;
+//        HashMap<Integer, UserReservation> userReservations = new HashMap<>();
+//        for (Reservation r: reservations)
+//        {
+//            if (!userReservations.containsKey(r.getConfirmationNumber()))
+//            {
+//                Integer confNumber = r.getConfirmationNumber();
+//                u1 = new UserReservation();
+//                List<RentalProperty> properties = new ArrayList<>();
+//                List<Date> checkInDates = new ArrayList<>();
+//                List<Date> checkOutDates = new ArrayList<>();
+//                properties.add(r.getProperty());
+//                checkInDates.add(r.getCheckinDate());
+//                checkOutDates.add(r.getCheckoutDate());
+//                u1.setCheckinDate(checkInDates);
+//                u1.setCheckoutDate(checkOutDates);
+//                u1.setPropertyIds(properties);
+//                u1.setConfirmationNumber(confNumber);
+//                u1.setCustomer(r.getCustomer());
+//                userReservations.put(confNumber, u1);
+//            }
+//            else
+//            {
+//                u1 = userReservations.get(r.getConfirmationNumber());
+//                List<RentalProperty> properties = u1.getPropertyIds();
+//                List<Date> checkInDates = u1.getCheckinDate();
+//                List<Date> checkOutDates = u1.getCheckoutDate();
+//                properties.add(r.getProperty());
+//                checkInDates.add(r.getCheckinDate());
+//                checkOutDates.add(r.getCheckoutDate());
+//                u1.setPropertyIds(properties);
+//                u1.setCheckinDate(checkInDates);
+//                u1.setCheckoutDate(checkOutDates);
+//                u1.setCustomer(r.getCustomer());
+//                u1.setConfirmationNumber(r.getConfirmationNumber());
+//                userReservations.put(r.getConfirmationNumber(), u1);
+//            }
+//
+//        }
+//        return userReservations;
+//    }
 
     @PostMapping("/cart/add/{apikey}")
     public String addToCart(@RequestBody CartRequest c, @PathVariable String apikey) {
