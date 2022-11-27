@@ -15,7 +15,9 @@ public class CustomerRowMapper implements RowMapper<Customer> {
         customer.setUsername(rs.getString("username"));
         customer.setPassword(rs.getString("password"));
         customer.setUserID(rs.getInt("customer_id"));
-        customer.setApiKey(rs.getString("apiKey"));
+        if(rs.getString("apiKey")!=null) {
+            customer.setApiKey(rs.getString("apiKey"));
+        }
         return customer;
     }
 }
