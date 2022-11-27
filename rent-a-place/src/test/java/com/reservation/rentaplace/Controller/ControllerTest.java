@@ -214,12 +214,10 @@ class ControllerTest {
     @Test
     @DisplayName("Invalid session for add to cart")
     void invalidSessionAddToCart(){
-        Customer customer = new Customer();
-        customer.setUsername("cherry012");
-        customer.setPassword("cher123");
+        Customer customer = getCustomer();
         customer.setApiKey(null);
         CartRequest cr = new CartRequest();
-        cr.setUsername("garry123");
+        cr.setUsername("cherry012");
         cr.setPropertyID(1);
         cr.setCheckinDate("12-12-2022");
         cr.setCheckoutDate("14-12-2022");
@@ -231,12 +229,10 @@ class ControllerTest {
     @Test
     @DisplayName("Invalid API Key for add to cart")
     void invalidAPIKeyAddToCart(){
-        Customer customer = new Customer();
-        customer.setUsername("cherry012");
-        customer.setPassword("cher123");
+        Customer customer = getCustomer();
         customer.setApiKey("yyyyy");
         CartRequest cr = new CartRequest();
-        cr.setUsername("garry123");
+        cr.setUsername("cherry012");
         cr.setPropertyID(1);
         cr.setCheckinDate("12-12-2022");
         cr.setCheckoutDate("14-12-2022");
@@ -268,7 +264,7 @@ class ControllerTest {
         Customer customer = getCustomer();
         customer.setCart(cart);
         CartRequest cr = new CartRequest();
-        cr.setUsername("garry123");
+        cr.setUsername("cherry012");
         cr.setPropertyID(1);
         cr.setCheckinDate("12-14-2022");
         cr.setCheckoutDate("12-12-2022");
@@ -288,7 +284,7 @@ class ControllerTest {
         Customer customer = getCustomer();
         customer.setCart(cart);
         CartRequest cr = new CartRequest();
-        cr.setUsername("garry123");
+        cr.setUsername("cherry012");
         cr.setPropertyID(1);
         cr.setCheckinDate("14-12-2022");
         cr.setCheckoutDate("12-12-2022");
@@ -308,7 +304,7 @@ class ControllerTest {
         Customer customer = getCustomer();
         customer.setCart(cart);
         CartRequest cr = new CartRequest();
-        cr.setUsername("garry123");
+        cr.setUsername("cherry012");
         cr.setPropertyID(1);
         cr.setCheckinDate("11-18-2022");
         cr.setCheckoutDate("12-12-2022");
@@ -328,7 +324,7 @@ class ControllerTest {
         Customer customer = getCustomer();
         customer.setCart(cart);
         CartRequest cr = new CartRequest();
-        cr.setUsername("garry123");
+        cr.setUsername("cherry012");
         cr.setPropertyID(1);
         cr.setCheckinDate("12-12-2022");
         cr.setCheckoutDate("11-12-2022");
@@ -348,7 +344,7 @@ class ControllerTest {
         Customer customer = getCustomer();
         customer.setCart(cart);
         CartRequest cr = new CartRequest();
-        cr.setUsername("garry123");
+        cr.setUsername("cherry012");
         cr.setPropertyID(1);
         cr.setCheckinDate("12-12-2022");
         cr.setCheckoutDate("14-12-2022");
@@ -367,7 +363,7 @@ class ControllerTest {
         Customer customer = getCustomer();
         customer.setCart(cart);
         CartRequest cr = new CartRequest();
-        cr.setUsername("garry123");
+        cr.setUsername("cherry012");
         cr.setPropertyID(1);
         cr.setCheckinDate("12-12-2022");
         cr.setCheckoutDate("12-15-2022");
@@ -383,7 +379,7 @@ class ControllerTest {
         Customer customer = getCustomer();
         customer.setCart(cart);
         CartRequest cr = new CartRequest();
-        cr.setUsername("garry123");
+        cr.setUsername("cherry012");
         cr.setPropertyID(1);
         cr.setCheckinDate("12-12-2022");
         cr.setCheckoutDate("12-14-2022");
@@ -483,6 +479,7 @@ class ControllerTest {
         property.setNum_baths(2);
         property.setProperty_description("Lakeside villa");
         property.setProperty_name("Marquis");
+        property.setProperty_id(1);
         property.setProperty_type("Villa");
         property.setCity("Madison");
         property.setPet_friendly(1);
@@ -490,4 +487,76 @@ class ControllerTest {
         property.setCarpet_area(1900);
         return property;
     }
+
+    @Test
+    @DisplayName("Invalid user remove from cart")
+    void invalidUserDeleteCart(){
+        Cart cart = getEmptyCart();
+        Customer customer = getCustomer();
+        customer.setCart(cart);
+        CartRequest cr = getCartRequest();
+        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(null);
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> c.removeFromCart(cr, "xxxxx"));
+        assertEquals("Invalid user", exception.getMessage());
+    }
+    @Test
+    @DisplayName("Invalid session remove from cart")
+    void invalidSessionDeleteCart(){
+        Cart cart = getEmptyCart();
+        Customer customer = getCustomer();
+        customer.setApiKey(null);
+        customer.setCart(cart);
+        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
+        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.removeFromCart(getCartRequest(), "xxxxx"));
+        assertEquals("Please login", exception.getMessage());
+    }
+
+    CartRequest getCartRequest(){
+        CartRequest cr = new CartRequest();
+        cr.setUsername("cherry012");
+        cr.setPropertyID(1);
+        cr.setCheckinDate("12-12-2022");
+        cr.setCheckoutDate("12-14-2022");
+        return cr;
+    }
+    @Test
+    @DisplayName("Invalid API key remove from cart")
+    void invalidAPIKeyDeleteCart(){
+        Cart cart = getEmptyCart();
+        Customer customer = getCustomer();
+        customer.setCart(cart);
+        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
+        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.removeFromCart(getCartRequest(), "yyyyy"));
+        assertEquals("Unauthenticated - incorrect API Key.", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("Remove from cart when property does not exist/ empty cart")
+    void invalidPropertyDeleteCart(){
+        Cart cart = getEmptyCart();
+        Customer customer = getCustomer();
+        customer.setCart(cart);
+        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> c.removeFromCart(getCartRequest(), "xxxxx"));
+        assertEquals("Property does not exist in cart", exception.getMessage());
+    }
+    @Test
+    @DisplayName("Remove from cart successfully")
+    void successfulDeleteCart(){
+        Cart cart = getEmptyCart();
+        Customer customer = getCustomer();
+        RentalProperty property = new Villa();
+        SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
+        try{
+            cart.addToCart(getProperty(property), sdf.parse("12-12-2022"), sdf.parse("12-14-2022"));
+        }
+        catch(Exception e){
+            System.out.println(e);
+        }
+        customer.setCart(cart);
+        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
+        when(c.getDb().updateCart(customer)).thenReturn(1);
+        assertEquals("Removed from cart successfully", c.removeFromCart(getCartRequest(), "xxxxx"));
+    }
+
 }
