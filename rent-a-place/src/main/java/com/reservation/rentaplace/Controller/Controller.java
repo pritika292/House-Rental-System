@@ -35,10 +35,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 @Getter
@@ -443,18 +440,56 @@ public class Controller
     public String createReservation(@RequestBody ReservationRequest r) {
         Customer user = db.getCustomer(r.getUsername());
         int userId = user.getUserID();
-        Cart userCart = db.getCart(userId);
+        Cart userCart = user.getCart();
+        //Cart userCart = db.getCart(userId);
         ArrayList<Reservation> reservation = db.getReservations();
         if(!userCart.verifyCart(reservation)){
-            return "Invalid cart";}
-        Reservation reserve  = new Reservation();
+            return "Invalid cart";
+        }
+        /*Reservation reserve  = new Reservation();
         int result = db.updateReserves(reserve);
         if(result == 1)
             return "Reserved successfully";
         else
-            throw new RuntimeException("Error occurred, cannot add to reserve");
+            throw new RuntimeException("Error occurred, cannot add to reserve");*/
 
+
+        //Cart userCart = user.getCart();
+        ArrayList<RentalProperty> property_list = userCart.getProperty();
+        ArrayList<Date> checkinDates = userCart.getCheckinDate();
+        ArrayList<Date> checkoutDates = userCart.getCheckoutDate();
+        CouponList cL = new CouponList();
+        List<Coupon> coupons = r.getCoupons();
+        cL.setCoupons(coupons);
+        int size = property_list.size();
+        ArrayList<Reservation> reservations = new ArrayList<Reservation>();
+        Random rand = new Random();
+        int resID = rand.nextInt();
+        float invoiceAmount = generateInvoice(cL,r.getUsername());
+        for(int i = 0; i < size; i++) {
+            SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
+            int propertyId = property_list.get(i).getProperty_id();
+            Date checkinDate = checkinDates.get(i);
+            Date checkoutDate = checkoutDates.get(i);
+            RentalProperty p = db.getProperty(propertyId);
+            Reservation reserve = new Reservation();
+            reserve.setConfirmationNumber(resID);
+            reserve.setCustomer(user);
+            reserve.setProperty(p);
+            reserve.setCheckinDate(checkinDate);
+            reserve.setCheckoutDate(checkoutDate);
+            reserve.setInvoiceAmount(invoiceAmount);
+            reservations.add(reserve);
+        }
+        int result = db.addReserves(reservations);
+
+        if(result == -1){
+            throw new RuntimeException("Error occurred, couldn't reserve");
+        }else{
+            return "Reserved Successfully, Confirmation number is " + result;
+        }
     }
+
     @PostMapping("/rate/{confirmationNumber}/{rating}")
     public static void rate_property(@PathVariable String confirmationNumber , @PathVariable Float rating) {
 
