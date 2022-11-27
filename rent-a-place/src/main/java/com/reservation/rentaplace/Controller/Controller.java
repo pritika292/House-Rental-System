@@ -1,5 +1,6 @@
 package com.reservation.rentaplace.Controller;
 import com.nimbusds.jose.shaded.json.JSONObject;
+import com.reservation.rentaplace.Criteria.*;
 import com.reservation.rentaplace.Domain.*;
 import com.reservation.rentaplace.DAO.DBMgr;
 import com.reservation.rentaplace.Domain.Command.Coupon;
@@ -19,6 +20,9 @@ import com.reservation.rentaplace.Exception.InvalidRequestException;
 import com.reservation.rentaplace.Exception.ResourceNotFoundException;
 import com.reservation.rentaplace.Exception.UnauthorizedException;
 import com.reservation.rentaplace.Service.CustomerService;
+import com.reservation.rentaplace.Service.SearchPropertyService;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -29,53 +33,25 @@ import com.reservation.rentaplace.Domain.Reservation;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-
+@Getter
+@Setter
 @RestController
 public class Controller
 {
     @Autowired
     private DBMgr db = DBMgr.getInstance();
+
     @Autowired
     private CustomerService service;
 
-    public String generateMD5Hashvalue(String userName)
-    {
-        Date dateObj = new Date();
-        SimpleDateFormat formatter = new SimpleDateFormat("dd-M-yyyy hh:mm:ss");
-        String date = formatter.format(dateObj);
-        System.out.println(date);
-        MessageDigest md;
-        try {
-            md = MessageDigest.getInstance("MD5");
-        }
-        catch (NoSuchAlgorithmException e) {
-            throw new IllegalArgumentException(e);
-        }
-        String secretPhase = "project";
-        // By using the current date, userName(emailId) and
-        // the secretPhase , it is generated
-        byte[] hashResult
-                = md.digest((date + userName + secretPhase)
-                .getBytes(UTF_8));
-        // convert the value to hex
-        String password = bytesToHex(hashResult);
-        System.out.println("Generated password.."
-                + password);
+    @Autowired
+    private SearchPropertyService searchPropertyService;
 
-        return password;
-    }
-    private String bytesToHex(byte[] bytes)
-    {
-        StringBuilder sb = new StringBuilder();
-        for (byte b : bytes) {
-            sb.append(String.format("%02x", b));
-        }
-        return sb.toString();
-    }
     @PostMapping("/register")
     public String save(@RequestBody CustomerRequest c) {
         if(!c.verifyUsername())
@@ -84,6 +60,8 @@ public class Controller
             throw new InvalidRequestException("Invalid email id");
         if(!c.verifyPhoneNumber())
             throw new InvalidRequestException("Invalid phone number");
+        if(c.getPassword() == "")
+            throw new InvalidRequestException("Password cannot empty. Please enter valid password.");
 
         int cartId = db.createCart();
         if(cartId == -1)
@@ -99,7 +77,8 @@ public class Controller
             Customer c = db.getCustomer(l.getUsername());
             if (c != null) {
                 if (c.verifyPassword(l.getPassword())) {
-                    String key = generateMD5Hashvalue(c.getUsername());
+                    String key = db.generateMD5Hashvalue(c.getUsername());
+                    c.setApiKey(key);
                     if(db.createSession(c,key) == 1)
                         return "Login successful. API Key : " + key;
                     else
@@ -137,10 +116,98 @@ public class Controller
             throw new ResourceNotFoundException("Invalid user");
         }
     }
-    @GetMapping("/view/{location}/{dates}")
-    public RentalProperty getProperty(@PathVariable String location , @PathVariable String[] dates) {
-        return null;
+
+    @PostMapping("/view")
+    public Object getProperty(@RequestBody SearchPropertyRequest searchPropertyRequest) throws ParseException {
+        if(searchPropertyRequest.getCity()!=null && searchPropertyRequest.getCheckIn()!=null && searchPropertyRequest.getCheckOut()!=null) {
+
+            //Validate the check-in and check-out date
+            SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
+            String result = validateInputDates(searchPropertyRequest.getCheckIn(), searchPropertyRequest.getCheckOut(), sdf);
+
+            if(result != null){
+                throw new InvalidRequestException(result);
+            }
+
+            //Get the list of properties based on city
+            List<RentalProperty> propertiesList = db.getProperties(searchPropertyRequest);
+
+            //Get the reservations from reservation table
+            List<Reservation> reservationsList = db.getReservations();
+
+            SearchPropertyService searchPropertyService = new SearchPropertyService();
+            searchPropertyService.assignPropertiesList(propertiesList,sdf.parse(searchPropertyRequest.getCheckIn()), sdf.parse(searchPropertyRequest.getCheckOut()));
+
+            //Verify Properties with Reservation Table
+            propertiesList = searchPropertyService.verifyProperties(reservationsList);
+
+            //Setting the owner_name, owner_email and owner_phone_number
+            for(RentalProperty rentalProperty:propertiesList) {
+                Customer customer = db.getCustomerByID(rentalProperty.getOwner_id());
+                if (customer != null)
+                {
+                    rentalProperty.setOwner_name(customer.getName());
+                    rentalProperty.setOwner_email(customer.getEmail());
+                    rentalProperty.setOwner_phone_number(customer.getPhone_number());
+                }
+                else
+                {
+                    throw new ResourceNotFoundException("User not found");
+                }
+
+            }
+
+            //Filter the Properties List based on filters provided
+            List<RentalProperty> filteredRentalProperties = new ArrayList<>();
+
+            Criteria criteriaAverageRating = new CriteriaAverageRating();
+            Criteria criteriaCarpetArea = new CriteriaCarpetArea();
+            Criteria criteriaNumberOfBathrooms = new CriteriaNumberOfBathrooms();
+            Criteria criteriaNumberOfBedrooms = new CriteriaNumberOfBedrooms();
+            Criteria criteriaPetFriendly = new CriteriaPetFriendly();
+            Criteria criteriaPricePerNight = new CriteriaPricePerNight();
+            Criteria criteriaPropertyType = new CriteriaPropertyType();
+            Criteria criteriaWifiAvailability = new CriteriaWifiAvailability();
+
+            if(searchPropertyRequest.getAverage_rating() != null)
+            {
+                propertiesList = criteriaAverageRating.meetCriteria(propertiesList, searchPropertyRequest);
+            }
+            if(searchPropertyRequest.getCarpet_area() != null)
+            {
+                propertiesList = criteriaCarpetArea.meetCriteria(propertiesList, searchPropertyRequest);
+            }
+            if(searchPropertyRequest.getNum_baths() != null)
+            {
+                propertiesList = criteriaNumberOfBathrooms.meetCriteria(propertiesList, searchPropertyRequest);
+            }
+            if(searchPropertyRequest.getNum_bedrooms() != null)
+            {
+                propertiesList = criteriaNumberOfBedrooms.meetCriteria(propertiesList, searchPropertyRequest);
+            }
+            if(searchPropertyRequest.getPet_friendly() != null)
+            {
+                propertiesList = criteriaPetFriendly.meetCriteria(propertiesList, searchPropertyRequest);
+            }
+            if(searchPropertyRequest.getPrice_per_night() != null)
+            {
+                propertiesList = criteriaPricePerNight.meetCriteria(propertiesList, searchPropertyRequest);
+            }
+            if(searchPropertyRequest.getProperty_type() != null)
+            {
+                propertiesList = criteriaPropertyType.meetCriteria(propertiesList, searchPropertyRequest);
+            }
+            if(searchPropertyRequest.getWifi_avail() != null)
+            {
+                propertiesList = criteriaWifiAvailability.meetCriteria(propertiesList, searchPropertyRequest);
+            }
+
+            return propertiesList;
+        }
+        return "City or Check-In or Check-Out date is missing";
     }
+
+
     @GetMapping("/search/")
     public String search(@RequestBody Filter f) {
         return null;

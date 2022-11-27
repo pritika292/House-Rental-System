@@ -4,6 +4,8 @@ import com.reservation.rentaplace.Domain.Factory.FactoryProducer;
 import com.reservation.rentaplace.Domain.Factory.PropertyFactory;
 import com.reservation.rentaplace.Domain.Request.CustomerRequest;
 import com.reservation.rentaplace.mapper.*;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementCreator;
@@ -11,6 +13,8 @@ import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -19,6 +23,10 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
+@Getter
+@Setter
 @Repository
 public class DBMgr implements DBMgrDAO
 {
@@ -31,6 +39,40 @@ public class DBMgr implements DBMgrDAO
             instance = new DBMgr();
         }
         return instance;
+    }
+    public String generateMD5Hashvalue(String userName)
+    {
+        Date dateObj = new Date();
+        SimpleDateFormat formatter = new SimpleDateFormat("dd-M-yyyy hh:mm:ss");
+        String date = formatter.format(dateObj);
+        System.out.println(date);
+        MessageDigest md;
+        try {
+            md = MessageDigest.getInstance("MD5");
+        }
+        catch (NoSuchAlgorithmException e) {
+            throw new IllegalArgumentException(e);
+        }
+        String secretPhase = "project";
+        // By using the current date, userName(emailId) and
+        // the secretPhase , it is generated
+        byte[] hashResult
+                = md.digest((date + userName + secretPhase)
+                .getBytes(UTF_8));
+        // convert the value to hex
+        String password = bytesToHex(hashResult);
+        System.out.println("Generated password.."
+                + password);
+
+        return password;
+    }
+    private String bytesToHex(byte[] bytes)
+    {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) {
+            sb.append(String.format("%02x", b));
+        }
+        return sb.toString();
     }
     @Override
     public Customer getCustomer(String uname)
@@ -49,6 +91,7 @@ public class DBMgr implements DBMgrDAO
             return null;
         }
     }
+
     @Override
     public Customer getCustomerByID(int uid)
     {
@@ -80,8 +123,21 @@ public class DBMgr implements DBMgrDAO
     }
 
     @Override
-    public RentalProperty getProperty(String location, String[] date) {
-        return null;
+    public List<RentalProperty> getProperties(SearchPropertyRequest searchPropertyRequest)
+    {
+        String query = "select * from Property WHERE city = ? and availability='1'";
+        List<RentalProperty> rentalProperty =  null;
+        try {
+            rentalProperty = jdbcTemplate.query(query, new SearchRequestPropertyRowMapper(), searchPropertyRequest.getCity());
+            jdbcTemplate.query(query, new PropertyRowMapper(), searchPropertyRequest.getCity());
+
+            System.out.println("not null");
+            return rentalProperty;
+        }
+        catch (Exception e) {
+            System.out.println("is null");
+            return null;
+        }
     }
 
     @Override

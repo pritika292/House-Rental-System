@@ -3,12 +3,14 @@ package com.reservation.rentaplace.DAO;
 import com.reservation.rentaplace.Domain.*;
 import com.reservation.rentaplace.Domain.Request.CustomerRequest;
 
+import java.util.List;
+
 public interface DBMgrDAO {
     public Customer getCustomer(String uname);
 
     public Customer getCustomerByID(int uid);
 
-    public Property getProperty(String location, String[] date);
+    public List<RentalProperty> getProperties(SearchPropertyRequest searchPropertyRequest);
 
     public Property getProperty(Integer propertyID);
 
