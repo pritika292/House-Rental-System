@@ -30,10 +30,7 @@ import com.reservation.rentaplace.Domain.Reservation;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -377,12 +374,18 @@ public class Controller
         String username = r.getUsername();
         Customer user = db.getCustomer(username);
         int userId = user.getUserID();
-        Cart userCart = db.getCart(userId);
+        Cart userCart = user.getCart();
         ArrayList<RentalProperty> property_list = userCart.getProperty();
         ArrayList<Date> checkinDates = userCart.getCheckinDate();
         ArrayList<Date> checkoutDates = userCart.getCheckoutDate();
+        CouponList cL = new CouponList();
+        List<Coupon> coupons = r.getCoupons();
+        cL.setCoupons(coupons);
         int size = property_list.size();
         ArrayList<Reservation> reservations = new ArrayList<Reservation>();
+        Random rand = new Random();
+        int resID = rand.nextInt();
+        float invoiceAmount = generateInvoice(cL,username);
         for(int i = 0; i < size; i++) {
             SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
             int propertyId = property_list.get(i).getProperty_id();
@@ -390,14 +393,16 @@ public class Controller
             Date checkoutDate = checkoutDates.get(i);
             RentalProperty p = db.getProperty(propertyId);
             Reservation reserve = new Reservation();
+            reserve.setConfirmationNumber(resID);
             reserve.setCustomer(user);
             reserve.setProperty(p);
             reserve.setCheckinDate(checkinDate);
             reserve.setCheckoutDate(checkoutDate);
+            reserve.setInvoiceAmount(invoiceAmount);
             reservations.add(reserve);
         }
-        ArrayList<Integer> result = db.updateReserves(reservations);
-
+        int result = db.updateReserves(reservations);
+        /*
         if (result != null) {
             int resultSize = result.size();
             if(resultSize == 1) {
@@ -413,6 +418,11 @@ public class Controller
             }
         } else {
             throw new RuntimeException("Error occurred, couldn't reserve");
+        }*/
+        if(result == -1){
+            throw new RuntimeException("Error occurred, couldn't reserve");
+        }else{
+            return "Reserved Successfully, Confirmation number is " + result;
         }
     }
     @PostMapping("/reserve/{username}")

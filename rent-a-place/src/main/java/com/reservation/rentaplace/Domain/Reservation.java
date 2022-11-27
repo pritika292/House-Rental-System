@@ -17,4 +17,5 @@ public class Reservation
     private RentalProperty Property;
     private Date checkinDate;
     private Date checkoutDate;
+    private float invoiceAmount;
 }

@@ -125,7 +125,7 @@ public class DBMgr implements DBMgrDAO
             return null;
         }
     }
-    public ArrayList<Reservation> getReservations(){
+    public ArrayList<Reservation> cgetReservations(){
         ArrayList<Reservation> reservations = new ArrayList<Reservation>();
         String query = "SELECT * from Reservation";
         try {
@@ -275,7 +275,7 @@ public class DBMgr implements DBMgrDAO
         }
     }
 
-    public ArrayList<Integer> updateReserves(ArrayList<Reservation> reservations){
+    public int updateReserves(ArrayList<Reservation> reservations){
         try{
             /*
             int userID = r.getUserId();
@@ -294,23 +294,26 @@ public class DBMgr implements DBMgrDAO
                 jdbcTemplate.update("UPDATE reservation SET property_id = (?), customer_id = (?), checkin_date = (?), checkout_date = (?)", new Object[] {propertyId,userID,checkinDate,checkoutDate});
             }
             */
-            ArrayList<Integer> confirmationNumbers = new ArrayList<Integer>();
+            //ArrayList<Integer> confirmationNumbers = new ArrayList<Integer>();
+            int res_ID = 0;
             for(int i = 0; i < reservations.size(); i++){
                 SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
                 Reservation r = reservations.get(i);
                 int propertyId = r.getProperty().getProperty_id();
+                res_ID = r.getConfirmationNumber();
+                float invoiceAmount = r.getInvoiceAmount();
                 String checkinDate = sdf.format(r.getCheckinDate());
                 String checkoutDate = sdf.format(r.getCheckoutDate());
                 int userID = r.getCustomer().getUserID();
-                jdbcTemplate.update("UPDATE reservation SET property_id = (?), customer_id = (?), checkin_date = (?), checkout_date = (?)", new Object[] {propertyId,userID,checkinDate,checkoutDate});
-                ReservationRow newReservation = jdbcTemplate.queryForObject("SELECT * FROM reservation ORDER BY reservation_id DESC LIMIT 1",new ReservationRowMapper());
-                int res_id = newReservation.getReservation_id();
-                confirmationNumbers.add(res_id);
+                jdbcTemplate.update("UPDATE reservation SET reservation_id = (?), property_id = (?), customer_id = (?), checkin_date = (?), checkout_date = (?), invoice_amount = (?)", new Object[] {res_ID,propertyId,userID,checkinDate,checkoutDate,invoiceAmount});
+                //ReservationRow newReservation = jdbcTemplate.queryForObject("SELECT * FROM reservation ORDER BY reservation_id DESC LIMIT 1",new ReservationRowMapper());
+                //int res_id = newReservation.getReservation_id();
+                //confirmationNumbers.add(res_id);
             }
-            return confirmationNumbers;
+            return res_ID;
         }catch (Exception e){
             System.out.println(e);
-            return null;
+            return -1;
         }
     }
 
