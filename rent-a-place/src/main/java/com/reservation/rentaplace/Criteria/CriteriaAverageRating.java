@@ -12,7 +12,7 @@ public class CriteriaAverageRating implements Criteria {
     public List<RentalProperty> meetCriteria(List<RentalProperty> rentalPropertyList, SearchPropertyRequest searchPropertyRequest) {
         List<RentalProperty> AverageRatingFilterList = new ArrayList<RentalProperty>();
 
-        rentalPropertyList.removeIf(rentalProperty -> BooleanUtils.isFalse((searchPropertyRequest.getAverage_rating()) <= rentalProperty.getAverage_rating()));
+        rentalPropertyList.removeIf(rentalProperty ->  Boolean.valueOf((searchPropertyRequest.getAverage_rating()) <= rentalProperty.getAverage_rating()).equals(Boolean.FALSE));
 
         return rentalPropertyList;
     }

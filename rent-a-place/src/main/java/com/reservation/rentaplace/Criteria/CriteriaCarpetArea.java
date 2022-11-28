@@ -11,7 +11,8 @@ public class CriteriaCarpetArea implements Criteria{
     @Override
     public List<RentalProperty> meetCriteria(List<RentalProperty> rentalPropertyList, SearchPropertyRequest searchPropertyRequest) {
 
-        rentalPropertyList.removeIf(rentalProperty -> BooleanUtils.isFalse(rentalProperty.getCarpet_area() >= (searchPropertyRequest.getCarpet_area())));
+        rentalPropertyList.removeIf(rentalProperty -> Boolean.valueOf(rentalProperty.getCarpet_area() >= (searchPropertyRequest.getCarpet_area())).equals(Boolean.FALSE));
+
 
         return rentalPropertyList;
     }

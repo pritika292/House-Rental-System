@@ -11,7 +11,7 @@ public class CriteriaPetFriendly implements Criteria{
     @Override
     public List<RentalProperty> meetCriteria(List<RentalProperty> rentalPropertyList, SearchPropertyRequest searchPropertyRequest) {
 
-        rentalPropertyList.removeIf(rentalProperty -> BooleanUtils.isFalse(rentalProperty.getPet_friendly().equals(searchPropertyRequest.getPet_friendly())));
+        rentalPropertyList.removeIf(rentalProperty -> Boolean.valueOf(rentalProperty.getPet_friendly().equals(searchPropertyRequest.getPet_friendly())).equals(Boolean.FALSE));
 
         return rentalPropertyList;
     }

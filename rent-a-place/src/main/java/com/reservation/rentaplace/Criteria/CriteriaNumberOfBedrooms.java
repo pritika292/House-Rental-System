@@ -11,7 +11,7 @@ public class CriteriaNumberOfBedrooms implements Criteria{
     @Override
     public List<RentalProperty> meetCriteria(List<RentalProperty> rentalPropertyList, SearchPropertyRequest searchPropertyRequest) {
 
-        rentalPropertyList.removeIf(rentalProperty -> BooleanUtils.isFalse(rentalProperty.getNum_bedrooms().equals(searchPropertyRequest.getNum_bedrooms())));
+        rentalPropertyList.removeIf(rentalProperty -> Boolean.valueOf(rentalProperty.getNum_bedrooms().equals(searchPropertyRequest.getNum_bedrooms())).equals(Boolean.FALSE));
 
         return rentalPropertyList;
     }
