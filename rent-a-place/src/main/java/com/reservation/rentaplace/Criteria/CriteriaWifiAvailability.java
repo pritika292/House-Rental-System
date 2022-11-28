@@ -2,9 +2,7 @@ package com.reservation.rentaplace.Criteria;
 
 import com.reservation.rentaplace.Domain.RentalProperty;
 import com.reservation.rentaplace.Domain.SearchPropertyRequest;
-import org.apache.commons.lang3.BooleanUtils;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class CriteriaWifiAvailability implements Criteria{
