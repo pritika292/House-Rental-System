@@ -2,16 +2,14 @@ package com.reservation.rentaplace.Criteria;
 
 import com.reservation.rentaplace.Domain.RentalProperty;
 import com.reservation.rentaplace.Domain.SearchPropertyRequest;
-import org.apache.commons.lang3.BooleanUtils;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class CriteriaNumberOfBathrooms implements Criteria{
     @Override
     public List<RentalProperty> meetCriteria(List<RentalProperty> rentalPropertyList, SearchPropertyRequest searchPropertyRequest) {
 
-        rentalPropertyList.removeIf(rentalProperty -> BooleanUtils.isFalse(rentalProperty.getNum_baths().equals(searchPropertyRequest.getNum_baths())));
+        rentalPropertyList.removeIf(rentalProperty -> Boolean.valueOf(rentalProperty.getNum_baths().equals(searchPropertyRequest.getNum_baths())).equals(Boolean.FALSE));
 
         return rentalPropertyList;
     }
