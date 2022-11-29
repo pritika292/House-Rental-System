@@ -12,7 +12,7 @@ import org.springframework.jdbc.core.PreparedStatementCreator;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
-
+import java.util.UUID;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
@@ -207,15 +207,6 @@ public class DBMgr implements DBMgrDAO
             return null;
         }
     }
-    @Override
-    public Reservation getReservation(String uname, String property_id)
-    {
-        ArrayList<Reservation> reservations = new ArrayList<Reservation>();
-        int userID  = getCustomer(uname).getUserID();
-        //int property_id = getp
-        String query = "SELECT * FROM reservation WHERE customer_id = ? AND property_id";
-        return null;
-    }
 
     public Reservation getReservation(int reservation_id){
         try{
@@ -233,27 +224,10 @@ public class DBMgr implements DBMgrDAO
             return null;
         }
     }
-
-    public int addReserves(ArrayList<Reservation> reservations){
+    @Override
+    public int makeReservation(ArrayList<Reservation> reservations){
         try{
-             /*
-             int userID = r.getUserId();
-             Cart cart = r.getCart();
-             ArrayList<RentalProperty> property_list = cart.getProperty();
-             ArrayList<Date> checkinDates = cart.getCheckinDate();
-             ArrayList<Date> checkoutDates = cart.getCheckoutDate();
-
-             int size = property_list.size();
-             for(int i = 0; i < size; i++){
-                 SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
-                 int propertyId = property_list.get(i).getProperty_id();
-                 String checkinDate = sdf.format(checkinDates.get(i));
-                 String checkoutDate = sdf.format(checkoutDates.get(i));
-                 //jdbcTemplate.update("UPDATE Cart SET property_ids = (?), checkin_date = (?), checkout_date = (?), cart_value=(?) WHERE cart_id = (?)", new Object[] {properties, checkinDates, checkoutDates, cart.getCartValue(), cart.getCartID()});
-                 jdbcTemplate.update("UPDATE reservation SET property_id = (?), customer_id = (?), checkin_date = (?), checkout_date = (?)", new Object[] {propertyId,userID,checkinDate,checkoutDate});
-             }
-             */
-            //ArrayList<Integer> confirmationNumbers = new ArrayList<Integer>();
+            String query = "INSERT into Reservation(reservation_id,property_id,customer_id,checkin_date, checkout_date,invoice_amount) VALUES (?,?,?,?,?,?)";
             int res_ID = 0;
             for(int i = 0; i < reservations.size(); i++){
                 SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
@@ -264,10 +238,7 @@ public class DBMgr implements DBMgrDAO
                 String checkinDate = sdf.format(r.getCheckinDate());
                 String checkoutDate = sdf.format(r.getCheckoutDate());
                 int userID = r.getCustomer().getUserID();
-                jdbcTemplate.update("UPDATE reservation SET reservation_id = (?), property_id = (?), customer_id = (?), checkin_date = (?), checkout_date = (?), invoice_amount = (?)", new Object[] {res_ID,propertyId,userID,checkinDate,checkoutDate,invoiceAmount});
-                //ReservationRow newReservation = jdbcTemplate.queryForObject("SELECT * FROM reservation ORDER BY reservation_id DESC LIMIT 1",new ReservationRowMapper());
-                //int res_id = newReservation.getReservation_id();
-                //confirmationNumbers.add(res_id);
+                jdbcTemplate.update(query, new Object[] {res_ID,propertyId,userID,checkinDate,checkoutDate,invoiceAmount});
             }
             return res_ID;
         }catch (Exception e){

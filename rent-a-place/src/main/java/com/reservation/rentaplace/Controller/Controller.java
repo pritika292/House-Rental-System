@@ -427,12 +427,25 @@ public class Controller
         return null;
     }
 
-    @PostMapping("/reserve")
-    public String createReservation(@RequestBody ReservationRequest r) {
+    @PostMapping("/reserve/{apikey}")
+    public String createReservation(@RequestBody ReservationRequest r, @PathVariable String apikey) {
         String username = r.getUsername();
         Customer user = db.getCustomer(username);
+        if(user == null){
+            throw new ResourceNotFoundException("Invalid User");
+        }
+        if(user.getApiKey() == null){
+            throw new UnauthorizedException("Please login");
+        }
+        if(!user.getApiKey().equals(apikey)){
+            throw new UnauthorizedException("Unauthenticated - incorrect API Key.");
+        }
         int userId = user.getUserID();
         Cart userCart = user.getCart();
+        ArrayList<Reservation> reservationList = db.getReservations();
+        if(!userCart.verifyCart(reservationList)){
+            throw new InvalidRequestException("One or more properties in the cart are unavailable.");
+        }
         ArrayList<RentalProperty> property_list = userCart.getProperty();
         ArrayList<Date> checkinDates = userCart.getCheckinDate();
         ArrayList<Date> checkoutDates = userCart.getCheckoutDate();
@@ -442,7 +455,7 @@ public class Controller
         int size = property_list.size();
         ArrayList<Reservation> reservations = new ArrayList<Reservation>();
         Random rand = new Random();
-        int resID = rand.nextInt();
+        int resID = rand.nextInt(1000);
         float invoiceAmount = generateInvoice(cL,username);
         for(int i = 0; i < size; i++) {
             SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
@@ -459,39 +472,26 @@ public class Controller
             reserve.setInvoiceAmount(invoiceAmount);
             reservations.add(reserve);
         }
-        int result = db.addReserves(reservations);
-        /*
-        if (result != null) {
-            int resultSize = result.size();
-            if(resultSize == 1) {
-                return "Reserved Successfully, Confirmation number is " + result.get(0).toString();
-            }
-            else{
-                String confirmationNumbersString = "";
-                for(int j = 0; j<resultSize-1; j++){
-                    confirmationNumbersString = confirmationNumbersString + result.get(j).toString() + ", ";
-                }
-                confirmationNumbersString = confirmationNumbersString + result.get(resultSize-1) + ".";
-                return "Reserved Successfully, Confirmation numbers are " + confirmationNumbersString;
-            }
-        } else {
-            throw new RuntimeException("Error occurred, couldn't reserve");
-        }*/
+        int result = db.makeReservation(reservations);
         if(result == -1){
             throw new RuntimeException("Error occurred, couldn't reserve");
         }else{
+            clearCart(user, apikey);
             return "Reserved Successfully, Confirmation number is " + result;
         }
     }
-    @PostMapping("/reserve/{username}")
-    public String create(@PathVariable String username) {
-        Customer c = db.getCustomer(username);
-        Cart cart = c.getCart();
-        ArrayList<Reservation> r = db.getReservations();
-        if(cart.verifyCart(r)){
-            return "Verified cart";
+
+    private void clearCart(Customer user, String apikey){
+        Cart userCart = user.getCart();
+        SimpleDateFormat sdf =  new SimpleDateFormat("MM-dd-yyyy");
+        for(int i=0;i<userCart.getProperty().size();i++){
+            CartRequest cr = new CartRequest();
+            cr.setUsername(user.getUsername());
+            cr.setPropertyID(userCart.getProperty().get(i).getProperty_id());
+            cr.setCheckinDate(sdf.format(userCart.getCheckinDate().get(i)));
+            cr.setCheckoutDate(sdf.format(userCart.getCheckoutDate().get(i)));
+            removeFromCart(cr, apikey);
         }
-        return "Invalid cart";
     }
     @PostMapping("/rate/{confirmationNumber}/{rating}")
     public static void rate_property(@PathVariable String confirmationNumber , @PathVariable Float rating) {
