@@ -83,9 +83,12 @@ class ControllerTest {
     void invalidCityForViewProperty() throws ParseException {
         Reservation reservation = Mockito.mock(Reservation.class);
         Customer customer = Mockito.mock(Customer.class);
-        List<RentalProperty> list = Arrays.asList(rentalProperty);
+        //List<RentalProperty> list = Arrays.asList(rentalProperty);
         SearchPropertyRequest searchPropertyRequest = new SearchPropertyRequest();
-        Mockito.when(searchPropertyRequest.getCity()).thenReturn("NewYork");
+        searchPropertyRequest.setCheckIn("11-30-2022");
+        searchPropertyRequest.setCheckOut("11-30-2022");
+
+        /*Mockito.when(searchPropertyRequest.getCity()).thenReturn("NewYork");
         Mockito.when(searchPropertyRequest.getCheckIn()).thenReturn("11-29-2022");
         Mockito.when(searchPropertyRequest.getCheckOut()).thenReturn("11-29-2022");
         //Mockito.when(db.getProperties(searchPropertyRequest)).thenReturn();
@@ -105,9 +108,12 @@ class ControllerTest {
         Mockito.when(searchPropertyRequest.getPet_friendly()).thenReturn(0);
         //Mockito.when(searchPropertyRequest.getPrice_per_night()).thenReturn(new Float("1500"));
         Mockito.when(searchPropertyRequest.getWifi_avail()).thenReturn(1);
-        when(c.getProperty(searchPropertyRequest)).thenReturn(searchPropertyRequest);
+        when(c.getProperty(searchPropertyRequest)).thenReturn(searchPropertyRequest);*/
 
-        assertEquals(list, c.getProperty(searchPropertyRequest));
+        //assertEquals(list, c.getProperty(searchPropertyRequest));
+
+        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.getProperty(searchPropertyRequest));
+        assertEquals("Missing input values", exception.getMessage());
 
 
     }
