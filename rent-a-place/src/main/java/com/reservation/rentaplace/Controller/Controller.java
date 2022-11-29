@@ -11,10 +11,10 @@ import com.reservation.rentaplace.Domain.Factory.PropertyFactory;
 import com.reservation.rentaplace.Domain.Request.CartRequest;
 import com.reservation.rentaplace.Domain.Request.CustomerRequest;
 import com.reservation.rentaplace.Domain.Request.HostPropertyRequest;
+import com.reservation.rentaplace.Domain.Request.ReservationRequest;
 import com.reservation.rentaplace.Domain.Validator.DateValidator;
 import com.reservation.rentaplace.Domain.Validator.DateValidatorUsingDateFormat;
 import com.reservation.rentaplace.Domain.Login;
-import com.reservation.rentaplace.Domain.Filter;
 import com.reservation.rentaplace.Exception.InvalidRequestException;
 import com.reservation.rentaplace.Exception.ResourceNotFoundException;
 import com.reservation.rentaplace.Exception.UnauthorizedException;
@@ -28,17 +28,12 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.reservation.rentaplace.Domain.Constants;
+import com.reservation.rentaplace.Domain.Reservation;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 @Getter
 @Setter
 @RestController
@@ -54,7 +49,7 @@ public class Controller
     private SearchPropertyService searchPropertyService;
 
     @PostMapping("/register")
-    public String save(@RequestBody CustomerRequest c) {
+    public String register(@RequestBody CustomerRequest c) {
         if(!c.verifyUsername())
             throw new InvalidRequestException("Username cannot exceed the length of 10");
         if(!c.verifyEmail())
@@ -213,11 +208,6 @@ public class Controller
         throw  new InvalidRequestException("Missing input values");
     }
 
-
-    @GetMapping("/search/")
-    public String search(@RequestBody Filter f) {
-        return null;
-    }
     @PostMapping("/generateInvoice/{uname}")
     public float generateInvoice(@RequestBody(required = false) CouponList c, @PathVariable String uname)
     {
@@ -405,7 +395,7 @@ public class Controller
         return new ResponseEntity<Object>(entities, HttpStatus.OK);
     }
 
-    public void validateProperty(int propertyID){
+    private void validateProperty(int propertyID){
         String property_type = db.checkProperty(propertyID);
         if(property_type == null){
             throw new InvalidRequestException("Invalid property id : "+ propertyID);
@@ -441,15 +431,72 @@ public class Controller
         }
         return null;
     }
-    @PostMapping("/reserve/{username}")
-    public String create(@PathVariable String username) {
-        Customer c = db.getCustomer(username);
-        Cart cart = c.getCart();
-        ArrayList<Reservation> r = db.getReservations();
-        if(cart.verifyCart(r)){
-            return "Verified cart";
+
+    @PostMapping("/reserve/{apikey}")
+    public String createReservation(@RequestBody ReservationRequest r, @PathVariable String apikey) {
+        String username = r.getUsername();
+        Customer user = db.getCustomer(username);
+        if(user == null){
+            throw new ResourceNotFoundException("Invalid User");
         }
-        return "Invalid cart";
+        if(user.getApiKey() == null){
+            throw new UnauthorizedException("Please login");
+        }
+        if(!user.getApiKey().equals(apikey)){
+            throw new UnauthorizedException("Unauthenticated - incorrect API Key.");
+        }
+        int userId = user.getUserID();
+        Cart userCart = user.getCart();
+        ArrayList<Reservation> reservationList = db.getReservations();
+        if(!userCart.verifyCart(reservationList)){
+            throw new InvalidRequestException("One or more properties in the cart are unavailable.");
+        }
+        ArrayList<RentalProperty> property_list = userCart.getProperty();
+        ArrayList<Date> checkinDates = userCart.getCheckinDate();
+        ArrayList<Date> checkoutDates = userCart.getCheckoutDate();
+        CouponList cL = new CouponList();
+        List<Coupon> coupons = r.getCoupons();
+        cL.setCoupons(coupons);
+        int size = property_list.size();
+        ArrayList<Reservation> reservations = new ArrayList<Reservation>();
+        Random rand = new Random();
+        int resID = rand.nextInt(1000);
+        float invoiceAmount = generateInvoice(cL,username);
+        for(int i = 0; i < size; i++) {
+            SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
+            int propertyId = property_list.get(i).getProperty_id();
+            Date checkinDate = checkinDates.get(i);
+            Date checkoutDate = checkoutDates.get(i);
+            RentalProperty p = db.getProperty(propertyId);
+            Reservation reserve = new Reservation();
+            reserve.setConfirmationNumber(resID);
+            reserve.setCustomer(user);
+            reserve.setProperty(p);
+            reserve.setCheckinDate(checkinDate);
+            reserve.setCheckoutDate(checkoutDate);
+            reserve.setInvoiceAmount(invoiceAmount);
+            reservations.add(reserve);
+        }
+        int result = db.makeReservation(reservations);
+        if(result == -1){
+            throw new RuntimeException("Error occurred, couldn't reserve");
+        }else{
+            clearCart(user, apikey);
+            return "Reserved Successfully, Confirmation number is " + result;
+        }
+    }
+
+    private void clearCart(Customer user, String apikey){
+        Cart userCart = user.getCart();
+        SimpleDateFormat sdf =  new SimpleDateFormat("MM-dd-yyyy");
+        for(int i=0;i<userCart.getProperty().size();i++){
+            CartRequest cr = new CartRequest();
+            cr.setUsername(user.getUsername());
+            cr.setPropertyID(userCart.getProperty().get(i).getProperty_id());
+            cr.setCheckinDate(sdf.format(userCart.getCheckinDate().get(i)));
+            cr.setCheckoutDate(sdf.format(userCart.getCheckoutDate().get(i)));
+            removeFromCart(cr, apikey);
+        }
     }
     @PostMapping("/rate/{confirmationNumber}/{rating}")
     public static void rate_property(@PathVariable String confirmationNumber , @PathVariable Float rating) {

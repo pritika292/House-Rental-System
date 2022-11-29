@@ -14,6 +14,7 @@ public class ReservationRowMapper implements RowMapper<ReservationRow> {
         reservation.setProperty_id(rs.getInt("property_id"));
         reservation.setCheckin_date(rs.getString("checkin_date"));
         reservation.setCheckout_date(rs.getString("checkout_date"));
+        reservation.setInvoice_amount(rs.getFloat("invoice_amount"));
         return reservation;
     }
 }
