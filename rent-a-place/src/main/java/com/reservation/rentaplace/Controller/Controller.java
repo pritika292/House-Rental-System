@@ -15,7 +15,6 @@ import com.reservation.rentaplace.Domain.Request.ReservationRequest;
 import com.reservation.rentaplace.Domain.Validator.DateValidator;
 import com.reservation.rentaplace.Domain.Validator.DateValidatorUsingDateFormat;
 import com.reservation.rentaplace.Domain.Login;
-import com.reservation.rentaplace.Domain.Filter;
 import com.reservation.rentaplace.Exception.InvalidRequestException;
 import com.reservation.rentaplace.Exception.ResourceNotFoundException;
 import com.reservation.rentaplace.Exception.UnauthorizedException;
@@ -31,13 +30,10 @@ import org.springframework.web.bind.annotation.*;
 import com.reservation.rentaplace.Domain.Constants;
 import com.reservation.rentaplace.Domain.Reservation;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 @Getter
 @Setter
 @RestController
@@ -53,7 +49,7 @@ public class Controller
     private SearchPropertyService searchPropertyService;
 
     @PostMapping("/register")
-    public String save(@RequestBody CustomerRequest c) {
+    public String register(@RequestBody CustomerRequest c) {
         if(!c.verifyUsername())
             throw new InvalidRequestException("Username cannot exceed the length of 10");
         if(!c.verifyEmail())
@@ -207,11 +203,6 @@ public class Controller
         return "City or Check-In or Check-Out date is missing";
     }
 
-
-    @GetMapping("/search/")
-    public String search(@RequestBody Filter f) {
-        return null;
-    }
     @PostMapping("/generateInvoice/{uname}")
     public float generateInvoice(@RequestBody(required = false) CouponList c, @PathVariable String uname)
     {
@@ -399,7 +390,7 @@ public class Controller
         return new ResponseEntity<Object>(entities, HttpStatus.OK);
     }
 
-    public void validateProperty(int propertyID){
+    private void validateProperty(int propertyID){
         String property_type = db.checkProperty(propertyID);
         if(property_type == null){
             throw new InvalidRequestException("Invalid property id : "+ propertyID);
