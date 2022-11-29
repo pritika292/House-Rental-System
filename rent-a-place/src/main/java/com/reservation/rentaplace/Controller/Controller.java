@@ -459,7 +459,7 @@ public class Controller
             reserve.setInvoiceAmount(invoiceAmount);
             reservations.add(reserve);
         }
-        int result = db.updateReserves(reservations);
+        int result = db.addReserves(reservations);
         /*
         if (result != null) {
             int resultSize = result.size();

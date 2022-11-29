@@ -33,4 +33,6 @@ public interface DBMgrDAO {
 
     public int save(RentalProperty p);
 
+    public Reservation getReservation(String uname, String property_id);
+
 }
