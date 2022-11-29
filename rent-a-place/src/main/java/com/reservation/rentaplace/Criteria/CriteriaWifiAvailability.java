@@ -3,6 +3,7 @@ package com.reservation.rentaplace.Criteria;
 import com.reservation.rentaplace.Domain.RentalProperty;
 import com.reservation.rentaplace.Domain.SearchPropertyRequest;
 
+
 import java.util.List;
 
 public class CriteriaWifiAvailability implements Criteria{

@@ -11,6 +11,7 @@ import com.reservation.rentaplace.Domain.Factory.PropertyFactory;
 import com.reservation.rentaplace.Domain.Request.CartRequest;
 import com.reservation.rentaplace.Domain.Request.CustomerRequest;
 import com.reservation.rentaplace.Domain.Request.HostPropertyRequest;
+import com.reservation.rentaplace.Domain.Request.ReservationRequest;
 import com.reservation.rentaplace.Domain.Validator.DateValidator;
 import com.reservation.rentaplace.Domain.Validator.DateValidatorUsingDateFormat;
 import com.reservation.rentaplace.Domain.Login;
@@ -27,13 +28,11 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.reservation.rentaplace.Domain.Constants;
+import com.reservation.rentaplace.Domain.Reservation;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 @Getter
 @Setter
@@ -267,7 +266,7 @@ public class Controller
         // Validate user
         Customer user = db.getCustomer(c.getUsername());
         if(user == null){
-            throw new ResourceNotFoundException("Invalid user");
+            throw new InvalidRequestException("Invalid user");
         }
         if(user.getApiKey() == null){
             throw new UnauthorizedException("Please login");
@@ -307,7 +306,7 @@ public class Controller
         // validate user
         Customer user = db.getCustomer(c.getUsername());
         if(user == null){
-            throw new ResourceNotFoundException("Invalid user");
+            throw new InvalidRequestException("Invalid user");
         }
         if(user.getApiKey() == null){
             throw new UnauthorizedException("Please login");
@@ -426,6 +425,63 @@ public class Controller
             System.out.println(e);
         }
         return null;
+    }
+
+    @PostMapping("/reserve")
+    public String createReservation(@RequestBody ReservationRequest r) {
+        String username = r.getUsername();
+        Customer user = db.getCustomer(username);
+        int userId = user.getUserID();
+        Cart userCart = user.getCart();
+        ArrayList<RentalProperty> property_list = userCart.getProperty();
+        ArrayList<Date> checkinDates = userCart.getCheckinDate();
+        ArrayList<Date> checkoutDates = userCart.getCheckoutDate();
+        CouponList cL = new CouponList();
+        List<Coupon> coupons = r.getCoupons();
+        cL.setCoupons(coupons);
+        int size = property_list.size();
+        ArrayList<Reservation> reservations = new ArrayList<Reservation>();
+        Random rand = new Random();
+        int resID = rand.nextInt();
+        float invoiceAmount = generateInvoice(cL,username);
+        for(int i = 0; i < size; i++) {
+            SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
+            int propertyId = property_list.get(i).getProperty_id();
+            Date checkinDate = checkinDates.get(i);
+            Date checkoutDate = checkoutDates.get(i);
+            RentalProperty p = db.getProperty(propertyId);
+            Reservation reserve = new Reservation();
+            reserve.setConfirmationNumber(resID);
+            reserve.setCustomer(user);
+            reserve.setProperty(p);
+            reserve.setCheckinDate(checkinDate);
+            reserve.setCheckoutDate(checkoutDate);
+            reserve.setInvoiceAmount(invoiceAmount);
+            reservations.add(reserve);
+        }
+        int result = db.addReserves(reservations);
+        /*
+        if (result != null) {
+            int resultSize = result.size();
+            if(resultSize == 1) {
+                return "Reserved Successfully, Confirmation number is " + result.get(0).toString();
+            }
+            else{
+                String confirmationNumbersString = "";
+                for(int j = 0; j<resultSize-1; j++){
+                    confirmationNumbersString = confirmationNumbersString + result.get(j).toString() + ", ";
+                }
+                confirmationNumbersString = confirmationNumbersString + result.get(resultSize-1) + ".";
+                return "Reserved Successfully, Confirmation numbers are " + confirmationNumbersString;
+            }
+        } else {
+            throw new RuntimeException("Error occurred, couldn't reserve");
+        }*/
+        if(result == -1){
+            throw new RuntimeException("Error occurred, couldn't reserve");
+        }else{
+            return "Reserved Successfully, Confirmation number is " + result;
+        }
     }
     @PostMapping("/reserve/{username}")
     public String create(@PathVariable String username) {
