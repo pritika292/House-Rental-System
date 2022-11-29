@@ -275,7 +275,7 @@ public class Controller
         // Validate user
         Customer user = db.getCustomer(c.getUsername());
         if(user == null){
-            throw new ResourceNotFoundException("Invalid user");
+            throw new InvalidRequestException("Invalid user");
         }
         if(user.getApiKey() == null){
             throw new UnauthorizedException("Please login");
@@ -315,7 +315,7 @@ public class Controller
         // validate user
         Customer user = db.getCustomer(c.getUsername());
         if(user == null){
-            throw new ResourceNotFoundException("Invalid user");
+            throw new InvalidRequestException("Invalid user");
         }
         if(user.getApiKey() == null){
             throw new UnauthorizedException("Please login");
@@ -438,23 +438,10 @@ public class Controller
 
     @PostMapping("/reserve")
     public String createReservation(@RequestBody ReservationRequest r) {
-        Customer user = db.getCustomer(r.getUsername());
+        String username = r.getUsername();
+        Customer user = db.getCustomer(username);
         int userId = user.getUserID();
         Cart userCart = user.getCart();
-        //Cart userCart = db.getCart(userId);
-        ArrayList<Reservation> reservation = db.getReservations();
-        if(!userCart.verifyCart(reservation)){
-            return "Invalid cart";
-        }
-        /*Reservation reserve  = new Reservation();
-        int result = db.updateReserves(reserve);
-        if(result == 1)
-            return "Reserved successfully";
-        else
-            throw new RuntimeException("Error occurred, cannot add to reserve");*/
-
-
-        //Cart userCart = user.getCart();
         ArrayList<RentalProperty> property_list = userCart.getProperty();
         ArrayList<Date> checkinDates = userCart.getCheckinDate();
         ArrayList<Date> checkoutDates = userCart.getCheckoutDate();
@@ -465,7 +452,7 @@ public class Controller
         ArrayList<Reservation> reservations = new ArrayList<Reservation>();
         Random rand = new Random();
         int resID = rand.nextInt();
-        float invoiceAmount = generateInvoice(cL,r.getUsername());
+        float invoiceAmount = generateInvoice(cL,username);
         for(int i = 0; i < size; i++) {
             SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
             int propertyId = property_list.get(i).getProperty_id();
@@ -481,15 +468,40 @@ public class Controller
             reserve.setInvoiceAmount(invoiceAmount);
             reservations.add(reserve);
         }
-        int result = db.addReserves(reservations);
-
+        int result = db.updateReserves(reservations);
+        /*
+        if (result != null) {
+            int resultSize = result.size();
+            if(resultSize == 1) {
+                return "Reserved Successfully, Confirmation number is " + result.get(0).toString();
+            }
+            else{
+                String confirmationNumbersString = "";
+                for(int j = 0; j<resultSize-1; j++){
+                    confirmationNumbersString = confirmationNumbersString + result.get(j).toString() + ", ";
+                }
+                confirmationNumbersString = confirmationNumbersString + result.get(resultSize-1) + ".";
+                return "Reserved Successfully, Confirmation numbers are " + confirmationNumbersString;
+            }
+        } else {
+            throw new RuntimeException("Error occurred, couldn't reserve");
+        }*/
         if(result == -1){
             throw new RuntimeException("Error occurred, couldn't reserve");
         }else{
             return "Reserved Successfully, Confirmation number is " + result;
         }
     }
-
+    @PostMapping("/reserve/{username}")
+    public String create(@PathVariable String username) {
+        Customer c = db.getCustomer(username);
+        Cart cart = c.getCart();
+        ArrayList<Reservation> r = db.getReservations();
+        if(cart.verifyCart(r)){
+            return "Verified cart";
+        }
+        return "Invalid cart";
+    }
     @PostMapping("/rate/{confirmationNumber}/{rating}")
     public static void rate_property(@PathVariable String confirmationNumber , @PathVariable Float rating) {
 
