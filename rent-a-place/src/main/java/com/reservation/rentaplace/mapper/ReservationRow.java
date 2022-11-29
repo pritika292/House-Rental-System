@@ -11,4 +11,5 @@ public class ReservationRow {
     private int property_id;
     private String checkin_date;
     private String checkout_date;
+    private float invoice_amount;
 }
