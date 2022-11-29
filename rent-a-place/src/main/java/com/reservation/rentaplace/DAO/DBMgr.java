@@ -181,7 +181,7 @@ public class DBMgr implements DBMgrDAO
             return null;
         }
     }
-    public ArrayList<Reservation> cgetReservations(){
+    public ArrayList<Reservation> getReservations(){
         ArrayList<Reservation> reservations = new ArrayList<Reservation>();
         String query = "SELECT * from Reservation";
         try {
