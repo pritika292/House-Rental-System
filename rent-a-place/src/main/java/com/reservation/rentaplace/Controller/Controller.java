@@ -25,6 +25,9 @@ import org.springframework.web.bind.annotation.*;
 import com.reservation.rentaplace.Domain.Constants;
 import com.reservation.rentaplace.Domain.Reservation;
 
+
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -81,12 +84,6 @@ public class Controller
             else{
                 throw new ResourceNotFoundException("Login unsuccessful - invalid username");
             }
-            //Do not delete below code
-//        if (l.getUsername() != null && l.getPassword() != null)
-//        {
-//            return service.verifyLogin(l.getUsername(), l.getPassword());
-//        }
-//        return "Login unsuccessful";
 
     }
     @PostMapping("/logout/{username}/{apikey}")
@@ -198,11 +195,16 @@ public class Controller
         return "City or Check-In or Check-Out date is missing";
     }
 
-    @PostMapping("/generateInvoice/{uname}")
-    public float generateInvoice(@RequestBody(required = false) CouponList c, @PathVariable String uname)
+    @PostMapping("/generateInvoice/{uname}/{apiKey}")
+    public float generateInvoice(@RequestBody(required = false) CouponList c, @PathVariable String uname, @PathVariable String apiKey)
     {
+        Customer customer = authenticateUser(uname, apiKey);
+        if (customer == null)
+        {
+            throw new UnauthorizedException("Unauthorized or Invalid user");
+        }
         List<Float> couponDiscounts = null;
-        if (c.getCoupons()!= null)
+        if (c!=null && c.getCoupons()!= null)
         {
             couponDiscounts = new ArrayList<>();
             ArrayList<String> coupons = checkCoupons(c.getCoupons());
@@ -212,7 +214,7 @@ public class Controller
 
             }
         }
-        Cart customerCart = getCustomerCart(uname);
+        Cart customerCart = customer.getCart();
         if (customerCart.getCartValue() == 0)
         {
             throw new ResourceNotFoundException("User does not have any properties in cart");
@@ -223,6 +225,17 @@ public class Controller
             return generator.generateInvoice(couponDiscounts, customerCart.getCartValue());
         }
 
+    }
+
+    //Helper Method to authenticate user
+    private Customer authenticateUser(String username, String apiKey)
+    {
+        Customer customer = db.getCustomer(username);
+        if (customer == null || customer.getApiKey() == null || !customer.getApiKey().equals(apiKey))
+        {
+            return null;
+        }
+        return customer;
     }
     //Private helper method to verify coupons passed in by user
     private ArrayList<String> checkCoupons(List<Coupon> coupons)
@@ -243,31 +256,46 @@ public class Controller
        return new ArrayList<>(allCoupons);
 
     }
-
-    //Private helper method for generateInvoice
-    private Cart getCustomerCart(String uname)
+    @PostMapping("getPastReservations/owner/{uname}/{apiKey}")
+    public ResponseEntity<Object> getReservationofOwner(@PathVariable String uname, @PathVariable String apiKey)
     {
-        Customer customer = db.getCustomer(uname);
-        if (customer == null)
+        Customer user = authenticateUser(uname, apiKey);
+        if (user == null)
         {
-            throw new ResourceNotFoundException("User not found");
+            throw new UnauthorizedException("Unauthorized or Invalid user");
         }
-        Cart customerCart = customer.getCart();
-        return customerCart;
+        List<Reservation> userReservations = new ArrayList<>();
+        List<Reservation> reservations = db.getReservations();
+        for (Reservation r: reservations)
+        {
+            if (r.getProperty().getOwner_id() == user.getUserID())
+            {
+                userReservations.add(r);
+            }
+        }
+        List<JSONObject> entities = new ArrayList<>();
+        SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
+        for (int i = 0; i < userReservations.size(); i++)
+        {
+            JSONObject entity = new JSONObject();
+            entity.put("Confirmation Number", userReservations.get(i).getConfirmationNumber());
+            entity.put("Property Name", userReservations.get(i).getProperty().getProperty_name());
+            entity.put("Checkin date", sdf.format(userReservations.get(i).getCheckinDate()));
+            entity.put("Checkout date", sdf.format(userReservations.get(i).getCheckoutDate()));
+            entity.put("Invoice Amount", userReservations.get(i).getCheckoutDate());
+            entities.add(entity);
+        }
+        return new ResponseEntity<Object>(entities, HttpStatus.OK);
     }
 
     @PostMapping("/cart/add/{apikey}")
     public String addToCart(@RequestBody CartRequest c, @PathVariable String apikey) {
-        // Validate user
-        Customer user = db.getCustomer(c.getUsername());
-        if(user == null){
-            throw new InvalidRequestException("Invalid user");
-        }
-        if(user.getApiKey() == null){
-            throw new UnauthorizedException("Please login");
-        }
-        if(!user.getApiKey().equals(apikey)){
-            throw new UnauthorizedException("Unauthenticated - incorrect API Key.");
+
+        //Changed to authenticate user in one step
+        Customer user = authenticateUser(c.getUsername(), apikey);
+        if (user == null)
+        {
+            throw new UnauthorizedException("Unauthorized or Invalid user");
         }
         // Validate property id
         int propertyID = c.getPropertyID();
@@ -275,7 +303,7 @@ public class Controller
         // Validate dates
         SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
         String result = validateInputDates(c.getCheckinDate(), c.getCheckoutDate(), sdf);
-        if(result != null){
+        if(result == null || !result.equals("Valid dates")){
             throw new InvalidRequestException(result);
         }
         //Add to cart
@@ -299,15 +327,11 @@ public class Controller
     @PostMapping("/cart/remove/{apikey}")
     public String removeFromCart(@RequestBody CartRequest c, @PathVariable String apikey){
         // validate user
-        Customer user = db.getCustomer(c.getUsername());
-        if(user == null){
-            throw new InvalidRequestException("Invalid user");
-        }
-        if(user.getApiKey() == null){
-            throw new UnauthorizedException("Please login");
-        }
-        if(!user.getApiKey().equals(apikey)){
-            throw new UnauthorizedException("Unauthenticated - incorrect API Key.");
+        //Changed to authenticate user in one step
+        Customer user = authenticateUser(c.getUsername(), apikey);
+        if (user == null)
+        {
+            throw new UnauthorizedException("Unauthorized or Invalid user");
         }
         Cart cart = user.getCart();
         SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
@@ -356,15 +380,11 @@ public class Controller
     }
     @GetMapping(path = "/cart/view/{username}/{apikey}", produces= MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Object> viewCart(@PathVariable String username, @PathVariable String apikey) {
-        Customer user = db.getCustomer(username);
-        if(user == null){
-            throw new ResourceNotFoundException("Invalid User");
-        }
-        if(user.getApiKey() == null){
-            throw new UnauthorizedException("Please login");
-        }
-        if(!user.getApiKey().equals(apikey)){
-            throw new UnauthorizedException("Unauthenticated - incorrect API Key.");
+        //Changed to authenticate user in one step
+        Customer user = authenticateUser(username, apikey);
+        if (user == null)
+        {
+            throw new UnauthorizedException("Unauthorized or Invalid user");
         }
         Cart cart = user.getCart();
         SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
@@ -391,7 +411,7 @@ public class Controller
             throw new InvalidRequestException("Invalid property id : "+ propertyID);
         }
     }
-    private String validateInputDates(String checkinDate, String checkoutDate, SimpleDateFormat sdf){
+    private String validateInputDates(String checkinDate, String checkoutDate, SimpleDateFormat sdf) {
         DateValidator validator = new DateValidatorUsingDateFormat("MM-dd-yyyy");
         if(!validator.isValid(checkinDate)){
             return "Invalid check-in date";
@@ -415,11 +435,12 @@ public class Controller
             if(checkoutDate.compareTo(checkinDate) < 0){
                 return "Checkin date is after the checkout date, please select valid dates";
             }
+            return "Valid dates";
         }
         catch(Exception e){
-            System.out.println(e);
+            return null;
         }
-        return null;
+
     }
 
     @PostMapping("/reserve/{apikey}")
@@ -451,7 +472,7 @@ public class Controller
         ArrayList<Reservation> reservations = new ArrayList<Reservation>();
         Random rand = new Random();
         int resID = rand.nextInt(1000);
-        float invoiceAmount = generateInvoice(cL,username);
+        float invoiceAmount = generateInvoice(cL,username, user.getApiKey());
         for(int i = 0; i < size; i++) {
             SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
             int propertyId = property_list.get(i).getProperty_id();
@@ -492,14 +513,11 @@ public class Controller
     @PostMapping("/hostProperty/{username}/{apikey}")
     public String hostProperty(@RequestBody HostPropertyRequest hp, @PathVariable String username, @PathVariable String apikey){
         // Validate user
-        Customer user =  db.getCustomer(username);
-        if(user == null)
-            throw new ResourceNotFoundException("Invalid user.");
-        if(user.getApiKey() == null)
-            throw new UnauthorizedException("Please login.");
-        if(!user.getApiKey().equals(apikey))
-            throw new UnauthorizedException("Unauthenticated - incorrect API Key.");
-
+        Customer user =  authenticateUser(username, apikey);
+        if (user == null)
+        {
+            throw new UnauthorizedException("Unauthorized or Invalid user");
+        }
         // This would be Villa, Resort, BeachHouse, Apartment, Studio, Motel
         String propertyType = hp.getProperty_type().toLowerCase();
 
