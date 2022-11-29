@@ -23,18 +23,20 @@ public class SearchPropertyService {
     private Date checkoutDate;
 
     public List<RentalProperty> verifyProperties(List<Reservation> reservations) {
-        for(int i=0;i<rentalPropertiesList.size();i++){
+        List<RentalProperty> rentalPropertyRemovalList = new ArrayList<>();
+        for(RentalProperty rentalProperty:rentalPropertiesList){
             for (Reservation reservation : reservations) {
-                if (rentalPropertiesList.get(i).getProperty_id() == reservation.getProperty().getProperty_id()) {
+                if (rentalProperty.getProperty_id() == reservation.getProperty().getProperty_id()) {
                     if (checkinDate.compareTo(reservation.getCheckinDate()) >= 0 && checkinDate.compareTo(reservation.getCheckoutDate()) <= 0) {
-                        rentalPropertiesList.remove(i);
+                        rentalPropertyRemovalList.add(rentalProperty);
                     }
-                    if (checkoutDate.compareTo(reservation.getCheckinDate()) >= 0 && checkoutDate.compareTo(reservation.getCheckoutDate()) <= 0) {
-                        rentalPropertiesList.remove(i);
+                    else if (checkoutDate.compareTo(reservation.getCheckinDate()) >= 0 && checkoutDate.compareTo(reservation.getCheckoutDate()) <= 0) {
+                        rentalPropertyRemovalList.add(rentalProperty);
                     }
                 }
             }
         }
+        rentalPropertiesList.removeAll(rentalPropertyRemovalList);
         return rentalPropertiesList;
     }
 
