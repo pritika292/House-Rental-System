@@ -63,7 +63,7 @@ class ControllerTest {
         cr.setPassword("Garr123");
         cr.setEmail("Garry@gmail.com");
         cr.setPhone_number("967-295-2987");
-        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.save(cr));
+        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.register(cr));
         assertEquals("Username cannot exceed the length of 10", exception.getMessage());
     }
 
@@ -76,7 +76,7 @@ class ControllerTest {
         cr.setPassword("Garr123");
         cr.setEmail("Garry.com");
         cr.setPhone_number("967-295-2987");
-        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.save(cr));
+        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.register(cr));
         assertEquals("Invalid email id", exception.getMessage());
     }
 
@@ -89,7 +89,7 @@ class ControllerTest {
         cr.setPassword("Garr123");
         cr.setEmail("Garry@gmail.com");
         cr.setPhone_number("967-295-298723");
-        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.save(cr));
+        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.register(cr));
         assertEquals("Invalid phone number", exception.getMessage());
     }
     @Test
@@ -101,7 +101,7 @@ class ControllerTest {
         cr.setPassword("");
         cr.setEmail("Garry@gmail.com");
         cr.setPhone_number("967-295-2987");
-        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.save(cr));
+        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.register(cr));
         assertEquals("Password cannot empty. Please enter valid password.", exception.getMessage());
     }
     @Test
@@ -115,7 +115,7 @@ class ControllerTest {
         cr.setPhone_number("967-295-2987");
         when(c.getDb().createCart()).thenReturn(1);
         when(c.getDb().save(cr,1)).thenReturn(1);
-        assertEquals(cr.getName()+ " registered successfully.", c.save(cr));
+        assertEquals(cr.getName()+ " registered successfully.", c.register(cr));
     }
 
     @Test
