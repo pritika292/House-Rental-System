@@ -108,7 +108,7 @@ public class DBMgr implements DBMgrDAO
             return null;
         }
     }
-
+    @Override
     public int endSession(Customer c){
         int userID = c.getUserID();
         String query = "UPDATE Customer SET apiKey = ? where customer_id = ?";
@@ -170,6 +170,7 @@ public class DBMgr implements DBMgrDAO
             return null;
         }
     }
+    @Override
     public String checkProperty(Integer property_id){
         String query = "select property_type from Property WHERE property_id = ?";
         try{
@@ -181,6 +182,7 @@ public class DBMgr implements DBMgrDAO
             return null;
         }
     }
+    @Override
     public ArrayList<Reservation> getReservations(){
         ArrayList<Reservation> reservations = new ArrayList<Reservation>();
         String query = "SELECT * from Reservation";
@@ -206,15 +208,6 @@ public class DBMgr implements DBMgrDAO
         }
     }
     @Override
-    public Reservation getReservation(String uname, String property_id)
-    {
-        return null;
-    }
-
-    @Override
-    public int save(Reservation r) {
-        return 0;
-    }
     public int createCart(){
         String insert_sql = "INSERT INTO Cart (property_ids, cart_value) VALUES (?, ?)";
         try{
@@ -237,6 +230,7 @@ public class DBMgr implements DBMgrDAO
             return -1;
         }
     }
+    @Override
     public Cart getCart(int user_id){
         try{
             CartRow cartrow  = jdbcTemplate.queryForObject("SELECT * from Cart where cart_id in (SELECT cart_id from Customer where customer_id = (?))", new CartRowMapper(), user_id);
@@ -280,6 +274,7 @@ public class DBMgr implements DBMgrDAO
             return null;
         }
     }
+    @Override
     public int updateCart(Customer c){
         String update_sql = "";
         try{
@@ -346,10 +341,5 @@ public class DBMgr implements DBMgrDAO
         catch (Exception e){
             return 0;
         }
-    }
-    
-    @Override
-    public int create(Property p, Customer u){
-        return 0;
     }
 }
