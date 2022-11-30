@@ -1081,4 +1081,72 @@ class ControllerTest {
 
     }
 
+    @Test
+    @DisplayName("Get all past reservations that contain property of owner")
+    void getReservationsOfOwner() throws ParseException {
+        Customer owner = new Customer();
+        owner.setUsername("cherry012");
+        owner.setPassword("cher123");
+        owner.setApiKey("xxxxx");
+        owner.setUserID(2);
+        ArrayList<Reservation> reservations = new ArrayList<>();
+        Reservation res = new Reservation();
+        RentalProperty property = new Villa();
+        property.setProperty_id(1);
+        property.setOwner_id(2);
+        res.setProperty(property);
+        res.setCheckinDate(new Date());
+        res.setCheckoutDate(new Date());
+        Customer customer = new Customer();
+        customer.setEmail("cherry@gmail.com");
+        customer.setPhone_number("999-999-999");
+        customer.setName("Cherry");
+        res.setCustomer(customer);
+        res.setConfirmationNumber(1);
+        reservations.add(res);
+        when(c.getDb().getCustomer(owner.getUsername())).thenReturn(owner);
+        when(db.getReservations()).thenReturn(reservations);
+        assertEquals(HttpStatus.OK, c.getReservationofOwner("cherry012", "xxxxx").getStatusCode());
+    }
+
+    @Test
+    @DisplayName("Get all past reservations of person who is not an owner")
+    void getReservationsOfNonOwner() throws ParseException {
+        Customer owner = new Customer();
+        owner.setUsername("cherry012");
+        owner.setPassword("cher123");
+        owner.setApiKey("xxxxx");
+        owner.setUserID(3);
+        ArrayList<Reservation> reservations = new ArrayList<>();
+        Reservation res = new Reservation();
+        RentalProperty property = new Villa();
+        property.setProperty_id(1);
+        property.setOwner_id(2);
+        res.setProperty(property);
+        res.setCheckinDate(new Date());
+        res.setCheckoutDate(new Date());
+        Customer customer = new Customer();
+        customer.setEmail("cherry@gmail.com");
+        customer.setPhone_number("999-999-999");
+        customer.setName("Cherry");
+        res.setCustomer(customer);
+        res.setConfirmationNumber(1);
+        reservations.add(res);
+        when(c.getDb().getCustomer(owner.getUsername())).thenReturn(owner);
+        when(db.getReservations()).thenReturn(reservations);
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> c.getReservationofOwner("cherry012", "xxxxx"));
+        assertEquals("User does not have any properties", exception.getMessage());
+    }
+    @Test
+    @DisplayName("Get all past reservations of person who is invalid user")
+    void getReservationOfInvalidUser() throws ParseException {
+        Customer owner = new Customer();
+        owner.setUsername("cherry012");
+        owner.setPassword("cher123");
+        owner.setApiKey("xxxxx");
+        owner.setUserID(3);
+        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.getReservationofOwner("cherry011", "xxxxx"));
+        assertEquals("Unauthorized or Invalid user", exception.getMessage());
+    }
+
 }

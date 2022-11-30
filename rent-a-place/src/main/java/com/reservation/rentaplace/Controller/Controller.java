@@ -272,6 +272,10 @@ public class Controller
                 userReservations.add(r);
             }
         }
+        if (userReservations.size() == 0)
+        {
+            throw new ResourceNotFoundException("User does not have any properties");
+        }
         List<JSONObject> entities = new ArrayList<>();
         SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
         for (int i = 0; i < userReservations.size(); i++) {
@@ -280,7 +284,9 @@ public class Controller
             entity.put("Property Name", userReservations.get(i).getProperty().getProperty_name());
             entity.put("Checkin date", sdf.format(userReservations.get(i).getCheckinDate()));
             entity.put("Checkout date", sdf.format(userReservations.get(i).getCheckoutDate()));
-            entity.put("Invoice Amount", userReservations.get(i).getCheckoutDate());
+            entity.put("Customer Name", userReservations.get(i).getCustomer().getName());
+            entity.put("Customer Phone Number", userReservations.get(i).getCustomer().getPhone_number());
+            entity.put("Customer Email", userReservations.get(i).getCustomer().getEmail());
             entities.add(entity);
         }
         return new ResponseEntity<Object>(entities, HttpStatus.OK);
