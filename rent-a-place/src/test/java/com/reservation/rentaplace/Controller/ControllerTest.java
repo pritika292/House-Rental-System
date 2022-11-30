@@ -11,7 +11,6 @@ import com.reservation.rentaplace.Domain.Command.Coupon;
 import com.reservation.rentaplace.Domain.Command.CouponList;
 import com.reservation.rentaplace.Domain.Request.CartRequest;
 import com.reservation.rentaplace.Domain.Request.CustomerRequest;
-import com.reservation.rentaplace.Domain.Request.HostPropertyRequest;
 import com.reservation.rentaplace.Exception.InvalidRequestException;
 import com.reservation.rentaplace.Exception.ResourceNotFoundException;
 import com.reservation.rentaplace.Exception.UnauthorizedException;
@@ -26,24 +25,12 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
-import com.reservation.rentaplace.Domain.Request.CustomerRequest;
-import com.reservation.rentaplace.Exception.InvalidRequestException;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.when;
 
 class ControllerTest {
     @Mock
@@ -1106,7 +1093,7 @@ class ControllerTest {
         reservations.add(res);
         when(c.getDb().getCustomer(owner.getUsername())).thenReturn(owner);
         when(db.getReservations()).thenReturn(reservations);
-        assertEquals(HttpStatus.OK, c.getReservationofOwner("cherry012", "xxxxx").getStatusCode());
+        assertEquals(HttpStatus.OK, c.getPastReservationofOwner("cherry012", "xxxxx").getStatusCode());
     }
 
     @Test
@@ -1134,7 +1121,7 @@ class ControllerTest {
         reservations.add(res);
         when(c.getDb().getCustomer(owner.getUsername())).thenReturn(owner);
         when(db.getReservations()).thenReturn(reservations);
-        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> c.getReservationofOwner("cherry012", "xxxxx"));
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> c.getPastReservationofOwner("cherry012", "xxxxx"));
         assertEquals("User does not have any properties", exception.getMessage());
     }
     @Test
@@ -1145,7 +1132,7 @@ class ControllerTest {
         owner.setPassword("cher123");
         owner.setApiKey("xxxxx");
         owner.setUserID(3);
-        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.getReservationofOwner("cherry011", "xxxxx"));
+        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.getPastReservationofOwner("cherry011", "xxxxx"));
         assertEquals("Unauthorized or Invalid user", exception.getMessage());
     }
 

@@ -26,8 +26,6 @@ import com.reservation.rentaplace.Domain.Constants;
 import com.reservation.rentaplace.Domain.Reservation;
 
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -259,8 +257,8 @@ public class Controller
 
 
 
-    @PostMapping("getPastReservations/owner/{uname}/{apiKey}")
-    public ResponseEntity<Object> getReservationofOwner(@PathVariable String uname, @PathVariable String apiKey) {
+    @GetMapping(path="getPastReservations/owner/{uname}/{apiKey}", produces= MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Object> getPastReservationofOwner(@PathVariable String uname, @PathVariable String apiKey) {
         Customer user = authenticateUser(uname, apiKey);
         if (user == null) {
             throw new UnauthorizedException("Unauthorized or Invalid user");
@@ -292,71 +290,99 @@ public class Controller
         return new ResponseEntity<Object>(entities, HttpStatus.OK);
     }
 
-//    @PostMapping("getPastReservations/renter/{uname}/{apiKey}")
-//    public List<UserReservation> getReservationforRenter(@PathVariable String uname, @PathVariable String apiKey)
-//    {
-//        Customer user = authenticateUser(uname, apiKey);
-//        if (user == null)
-//        {
-//            throw new UnauthorizedException("Unauthorized or Invalid user");
-//        }
-//
-//        List<Reservation> reservations = db.getReservations();
-//        HashMap<Integer, UserReservation> groupedReservations = getRenterReservations(reservations);
-//        List<UserReservation> userReservations = new ArrayList<>();
-//        for (Integer key: groupedReservations.keySet())
-//        {
-//            if (groupedReservations.get(key).getCustomer().getUserID() == user.getUserID())
-//            {
-//                userReservations.add(groupedReservations.get(key));
-//            }
-//        }
-//        return userReservations;
-//    }
-//
-//    private HashMap<Integer, UserReservation> getRenterReservations(List<Reservation> reservations)
-//    {
-//        UserReservation u1 = null;
-//        HashMap<Integer, UserReservation> userReservations = new HashMap<>();
-//        for (Reservation r: reservations)
-//        {
-//            if (!userReservations.containsKey(r.getConfirmationNumber()))
-//            {
-//                Integer confNumber = r.getConfirmationNumber();
-//                u1 = new UserReservation();
-//                List<RentalProperty> properties = new ArrayList<>();
-//                List<Date> checkInDates = new ArrayList<>();
-//                List<Date> checkOutDates = new ArrayList<>();
-//                properties.add(r.getProperty());
-//                checkInDates.add(r.getCheckinDate());
-//                checkOutDates.add(r.getCheckoutDate());
-//                u1.setCheckinDate(checkInDates);
-//                u1.setCheckoutDate(checkOutDates);
-//                u1.setPropertyIds(properties);
-//                u1.setConfirmationNumber(confNumber);
-//                u1.setCustomer(r.getCustomer());
-//                userReservations.put(confNumber, u1);
-//            }
-//            else
-//            {
-//                u1 = userReservations.get(r.getConfirmationNumber());
-//                List<RentalProperty> properties = u1.getPropertyIds();
-//                List<Date> checkInDates = u1.getCheckinDate();
-//                List<Date> checkOutDates = u1.getCheckoutDate();
-//                properties.add(r.getProperty());
-//                checkInDates.add(r.getCheckinDate());
-//                checkOutDates.add(r.getCheckoutDate());
-//                u1.setPropertyIds(properties);
-//                u1.setCheckinDate(checkInDates);
-//                u1.setCheckoutDate(checkOutDates);
-//                u1.setCustomer(r.getCustomer());
-//                u1.setConfirmationNumber(r.getConfirmationNumber());
-//                userReservations.put(r.getConfirmationNumber(), u1);
-//            }
-//
-//        }
-//        return userReservations;
-//    }
+    @PostMapping(path="getPastReservations/renter/{uname}/{apiKey}", produces= MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Object> getPastReservationforRenter(@PathVariable String uname, @PathVariable String apiKey)
+    {
+        Customer user = authenticateUser(uname, apiKey);
+        if (user == null)
+        {
+            throw new UnauthorizedException("Unauthorized or Invalid user");
+        }
+
+        List<Reservation> reservations = db.getReservations();
+        HashMap<Integer, UserReservation> groupedReservations = getRenterReservations(reservations);
+        List<UserReservation> userReservations = new ArrayList<>();
+        for (Integer key: groupedReservations.keySet())
+        {
+            if (groupedReservations.get(key).getCustomer().getUserID() == user.getUserID())
+            {
+                userReservations.add(groupedReservations.get(key));
+            }
+        }
+        System.out.println(userReservations.size());
+        List<JSONObject> entities = new ArrayList<>();
+        SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
+        for (int i = 0; i < userReservations.size(); i++)
+        {
+            JSONObject entity = new JSONObject();
+            entity.put("Confirmation Number", userReservations.get(i).getConfirmationNumber());
+            String properties = "";
+            int index = 0;
+            List<JSONObject> propertyObjects = new ArrayList<>();
+            for (RentalProperty p: userReservations.get(i).getPropertyIds())
+            {
+                JSONObject obj = new JSONObject();
+                obj.put("Property Info", p);
+                obj.put("Checkin Date", userReservations.get(i).getCheckinDate().get(index));
+                obj.put("Checkout Date", userReservations.get(i).getCheckoutDate().get(index));
+                propertyObjects.add(obj);
+                index+=1;
+            }
+            entity.put("Properties", propertyObjects);
+            entity.put("Customer Name", userReservations.get(i).getCustomer().getName());
+            entity.put("Invoice Amount", userReservations.get(i).getInvoice_amount());
+            entity.put("Customer Email", userReservations.get(i).getCustomer().getEmail());
+            entities.add(entity);
+        }
+
+
+        return new ResponseEntity<Object>(entities, HttpStatus.OK);
+    }
+
+    private HashMap<Integer, UserReservation> getRenterReservations(List<Reservation> reservations)
+    {
+        UserReservation u1 = null;
+        HashMap<Integer, UserReservation> userReservations = new HashMap<>();
+        for (Reservation r: reservations)
+        {
+            if (!userReservations.containsKey(r.getConfirmationNumber()))
+            {
+                Integer confNumber = r.getConfirmationNumber();
+                u1 = new UserReservation();
+                List<RentalProperty> properties = new ArrayList<>();
+                List<Date> checkInDates = new ArrayList<>();
+                List<Date> checkOutDates = new ArrayList<>();
+                properties.add(r.getProperty());
+                checkInDates.add(r.getCheckinDate());
+                checkOutDates.add(r.getCheckoutDate());
+                u1.setCheckinDate(checkInDates);
+                u1.setCheckoutDate(checkOutDates);
+                u1.setPropertyIds(properties);
+                u1.setConfirmationNumber(confNumber);
+                u1.setCustomer(r.getCustomer());
+                System.out.println(r.getInvoiceAmount() + " Invoice amount");
+                u1.setInvoice_amount(r.getInvoiceAmount());
+                userReservations.put(confNumber, u1);
+            }
+            else
+            {
+                u1 = userReservations.get(r.getConfirmationNumber());
+                List<RentalProperty> properties = u1.getPropertyIds();
+                List<Date> checkInDates = u1.getCheckinDate();
+                List<Date> checkOutDates = u1.getCheckoutDate();
+                properties.add(r.getProperty());
+                checkInDates.add(r.getCheckinDate());
+                checkOutDates.add(r.getCheckoutDate());
+                u1.setPropertyIds(properties);
+                u1.setCheckinDate(checkInDates);
+                u1.setCheckoutDate(checkOutDates);
+                u1.setCustomer(r.getCustomer());
+                userReservations.put(r.getConfirmationNumber(), u1);
+            }
+
+        }
+        return userReservations;
+    }
 
     @PostMapping("/cart/add/{apikey}")
     public String addToCart(@RequestBody CartRequest c, @PathVariable String apikey) {

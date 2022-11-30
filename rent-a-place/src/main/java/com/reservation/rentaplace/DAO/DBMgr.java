@@ -198,6 +198,7 @@ public class DBMgr implements DBMgrDAO
                 r.setCheckinDate(sdf.parse(p.get(i).getCheckin_date()));
                 r.setCheckoutDate(sdf.parse(p.get(i).getCheckout_date()));
                 r.setProperty(property);
+                r.setInvoiceAmount(p.get(i).getInvoice_amount());
                 reservations.add(r);
             }
             return reservations;
