@@ -3,18 +3,14 @@ package com.reservation.rentaplace.Controller;
 import com.nimbusds.jose.shaded.json.JSONObject;
 import com.reservation.rentaplace.DAO.DBMgr;
 import com.reservation.rentaplace.Domain.*;
-import com.reservation.rentaplace.Domain.Request.CartRequest;
-import com.reservation.rentaplace.Domain.Request.CustomerRequest;
-import com.reservation.rentaplace.Domain.Request.HostPropertyRequest;
-import com.reservation.rentaplace.Exception.InvalidRequestException;
-import com.reservation.rentaplace.Exception.ResourceNotFoundException;
-import com.reservation.rentaplace.Exception.UnauthorizedException;
+import com.reservation.rentaplace.Domain.Factory.FirstClassFactory;
+import com.reservation.rentaplace.Domain.Factory.PropertyFactory;
+import com.reservation.rentaplace.Domain.Request.*;
+import com.reservation.rentaplace.Exception.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -32,6 +28,7 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import javax.swing.text.html.parser.Entity;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -558,5 +555,293 @@ class ControllerTest {
         when(c.getDb().updateCart(customer)).thenReturn(1);
         assertEquals("Removed from cart successfully", c.removeFromCart(getCartRequest(), "xxxxx"));
     }
+    HostPropertyRequest hostPropertyRequest(){
+        HostPropertyRequest hp = new HostPropertyRequest();
+        hp.setAvailability(1);
+        hp.setCity("Dallas");
+        hp.setProperty_description("This is a lovely home.");
+        hp.setProperty_type("Villa");
+        hp.setProperty_name("SpringField");
+        hp.setCarpet_area(1234);
+        hp.setWifi_avail(1);
+        hp.setPet_friendly(0);
+        hp.setNum_of_bathrooms(2);
+        hp.setNum_of_bedrooms(2);
+        hp.setPrice_per_night(35.0f);
+        return hp;
+    }
 
+    HostPropertyRequest invalidHostPropertyRequest(){
+        HostPropertyRequest hp = new HostPropertyRequest();
+        hp.setAvailability(1);
+        hp.setCity("Dallas");
+        hp.setProperty_description("This is a lovely home.");
+        hp.setProperty_type("cottage");
+        hp.setProperty_name("SpringField");
+        hp.setCarpet_area(1234);
+        hp.setWifi_avail(1);
+        hp.setPet_friendly(0);
+        hp.setNum_of_bathrooms(2);
+        hp.setNum_of_bedrooms(2);
+        hp.setPrice_per_night(35.0f);
+        return hp;
+    }
+
+    @Test
+    @DisplayName("Host a Villa")
+    void hostPropertySuccessfully(){
+        Customer user = getCustomer();
+        RentalProperty property = new Villa();
+        PropertyFactory factory = new FirstClassFactory();
+
+
+        when(c.getDb().getCustomer(user.getUsername())).thenReturn(user);
+//        when(c.getProducer().getFactory("FirstClass")).thenReturn(factory);
+//        when(c.getFactory().getProperty("villa")).thenReturn(property);
+//        PropertyFactory factory1 = Mockito.spy(factory);
+//        Mockito.doReturn(property).when(factory1).getProperty("villa");
+        when(c.getDb().getsetProperty("villa")).thenReturn(property);
+        when(c.getDb().hostProperty(property)).thenReturn(1);
+        assertEquals("Hosted property successfully.", c.hostProperty(hostPropertyRequest(), user.getUsername(), user.getApiKey()));
+    }
+
+    @Test
+    @DisplayName("Invalid User for hosting property")
+    void hostPropertyInvalidUser() {
+        Customer user = getCustomer();
+        when(c.getDb().getCustomer(user.getUsername())).thenReturn(null);
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> c.hostProperty(hostPropertyRequest(), user.getUsername(), user.getApiKey()));
+        assertEquals("Invalid user.", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("Missing apikey for hosting property")
+    void hostPropertyMissingAPIKey() {
+        Customer user = getCustomer();
+        user.setApiKey(null);
+        when(c.getDb().getCustomer(user.getUsername())).thenReturn(user);
+        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.hostProperty(hostPropertyRequest(), user.getUsername(), null));
+        assertEquals("Please login.", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("Invalid apikey for hosting property")
+    void hostPropertyInvalidAPIKey() {
+        Customer user = getCustomer();
+        user.setApiKey("abcd");
+        when(c.getDb().getCustomer(user.getUsername())).thenReturn(user);
+        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.hostProperty(hostPropertyRequest(), user.getUsername(), "xyz"));
+        assertEquals("Unauthenticated - incorrect API Key.", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("Could not host property")
+    void hostPropertyUnsuccessful(){
+        Customer user = getCustomer();
+        RentalProperty property = new Villa();
+        when(c.getDb().getCustomer(user.getUsername())).thenReturn(user);
+        when(c.getDb().getsetProperty("villa")).thenReturn(property);
+        when(c.getDb().hostProperty(property)).thenReturn(0);
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> c.hostProperty(hostPropertyRequest(), user.getUsername(), user.getApiKey()));
+        assertEquals("Could not host property.", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("Invalid request for host property")
+    void hostPropertyInvalidRequest(){
+        Customer user = getCustomer();
+        RentalProperty property = new Villa();
+        PropertyFactory factory = new FirstClassFactory();
+        when(c.getDb().getCustomer(user.getUsername())).thenReturn(user);
+//        when(c.getProducer().getFactory("FirstClass")).thenReturn(factory);
+
+        PropertyFactory factory1 = Mockito.spy(factory);
+        Mockito.doReturn(property).when(factory1).getProperty("villa");
+        when(c.getDb().hostProperty(property)).thenReturn(0);
+        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.hostProperty(invalidHostPropertyRequest(), user.getUsername(), user.getApiKey()));
+        assertEquals("Property type should belong to (Villa, BeachHouse, Resort, Apartment, Studio, House, Motel).", exception.getMessage());
+    }
+    RatePropertyRequest ratePropertyRequest(){
+        RatePropertyRequest rp = new RatePropertyRequest();
+        rp.setRating(4.5f);
+        rp.setPropertyID(4);
+        rp.setReservationID(12);
+        return rp;
+    }
+    @Test
+    @DisplayName("Invalid User for rate property")
+    void ratePropertyInvalidUser() {
+        Customer user = getCustomer();
+        when(c.getDb().getCustomer(user.getUsername())).thenReturn(null);
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> c.rateProperty(ratePropertyRequest(), user.getUsername(), user.getApiKey()));
+        assertEquals("Invalid user.", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("Missing apikey for rate property")
+    void ratePropertyMissingAPIKey() {
+        Customer user = getCustomer();
+        user.setApiKey(null);
+        when(c.getDb().getCustomer(user.getUsername())).thenReturn(user);
+        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.rateProperty(ratePropertyRequest(), user.getUsername(), null));
+        assertEquals("Please login.", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("Invalid apikey for rate property")
+    void ratePropertyInvalidAPIKey() {
+        Customer user = getCustomer();
+        user.setApiKey("abcd");
+        when(c.getDb().getCustomer(user.getUsername())).thenReturn(user);
+        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.rateProperty(ratePropertyRequest(), user.getUsername(), "xyz"));
+        assertEquals("Unauthenticated - incorrect API Key.", exception.getMessage());
+    }
+
+    ArrayList<Reservation> getReservations() throws ParseException {
+        ArrayList<Reservation> reservations = new ArrayList<>();
+        Reservation r = new Reservation();
+        RentalProperty p = new Villa();
+        Customer user = getCustomer();
+        p = getProperty(p);
+        r.setProperty(p);
+        r.setCustomer(user);
+        SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
+        r.setCheckinDate(sdf.parse("11-12-2022"));
+        r.setCheckoutDate(sdf.parse("11-14-2022"));
+        r.setConfirmationNumber(555);
+        reservations.add(r);
+        return reservations;
+    }
+    ArrayList<Reservation> getInvalidUserReservation() throws ParseException {
+        ArrayList<Reservation> reservations = new ArrayList<>();
+        Reservation r = new Reservation();
+        RentalProperty p = new Villa();
+        Customer user = getCustomer();
+        user.setUsername("Tom");
+        p = getProperty(p);
+        r.setProperty(p);
+        r.setCustomer(user);
+        SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
+        r.setCheckinDate(sdf.parse("12-12-2022"));
+        r.setCheckoutDate(sdf.parse("12-14-2022"));
+        r.setConfirmationNumber(555);
+        reservations.add(r);
+        return reservations;
+    }
+    @Test
+    @DisplayName("Invalid reservation for rate property")
+    void ratePropertyInvalidReservationID() throws ParseException {
+        Customer user = getCustomer();
+        ArrayList<Reservation> reservations = getReservations();
+        when(c.getDb().getCustomer(user.getUsername())).thenReturn(user);
+        when(c.getDb().getReservations(ratePropertyRequest().getReservationID())).thenReturn(null);
+        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.rateProperty(ratePropertyRequest(), user.getUsername(), user.getApiKey()));
+        assertEquals("Invalid Reservation ID", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("Invalid reservation for user for rate property")
+    void ratePropertyInvalidUserReservationID() throws ParseException {
+        Customer user = getCustomer();
+        ArrayList<Reservation> reservations = getInvalidUserReservation();
+        when(c.getDb().getCustomer(user.getUsername())).thenReturn(user);
+        when(c.getDb().getReservations(ratePropertyRequest().getReservationID())).thenReturn(reservations);
+        UnauthorizedUser exception = assertThrows(UnauthorizedUser.class, () -> c.rateProperty(ratePropertyRequest(), user.getUsername(), user.getApiKey()));
+        assertEquals("Reservation does not belong to user!", exception.getMessage());
+    }
+    ArrayList<Reservation> getInvalidDateReservation() throws ParseException {
+        ArrayList<Reservation> reservations = new ArrayList<>();
+        Reservation r = new Reservation();
+        RentalProperty p = new Villa();
+        Customer user = getCustomer();
+        p = getProperty(p);
+        r.setProperty(p);
+        r.setCustomer(user);
+        SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
+        r.setCheckinDate(sdf.parse("12-12-2022"));
+        r.setCheckoutDate(sdf.parse("12-14-2022"));
+        r.setConfirmationNumber(555);
+        reservations.add(r);
+        return reservations;
+    }
+
+    RatePropertyRequest ratePropertyRequest2(){
+        RatePropertyRequest rp = new RatePropertyRequest();
+        rp.setRating(4.5);
+        rp.setPropertyID(1);
+        rp.setReservationID(12);
+        return rp;
+    }
+    RentalProperty getPropertyVilla(RentalProperty property){
+        property.setPrice_per_night(70f);
+        property.setNum_bedrooms(3);
+        property.setAvailability(1);
+        property.setNum_baths(2);
+        property.setProperty_description("This is a beautiful house.");
+        property.setProperty_name("HighlandSprings");
+        property.setProperty_id(4);
+        property.setProperty_type("Villa");
+        property.setCity("Austin");
+        property.setPet_friendly(1);
+        property.setWifi_avail(1);
+        property.setCarpet_area(1500);
+        property.setAverage_rating(4.5);
+        return property;
+    }
+    @Test
+    @DisplayName("Invalid property for rate property")
+    void ratePropertyInvalidProperty() throws ParseException {
+        Customer user = getCustomer();
+        ArrayList<Reservation> reservations = getInvalidDateReservation();
+        RentalProperty property = getPropertyVilla(new Villa());
+        when(c.getDb().getCustomer(user.getUsername())).thenReturn(user);
+        when(c.getDb().getReservations(ratePropertyRequest().getReservationID())).thenReturn(reservations);
+        when(c.getDb().getProperty(ratePropertyRequest().getPropertyID())).thenReturn(property);
+        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.rateProperty(ratePropertyRequest(), user.getUsername(), user.getApiKey()));
+        assertEquals("Property ID does not belong to reservation.", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("Invalid date for rate property")
+    void ratePropertyInvalidDate() throws ParseException {
+        Customer user = getCustomer();
+        ArrayList<Reservation> reservations = getInvalidDateReservation();
+        RentalProperty property = getProperty(new Villa());
+        when(c.getDb().getCustomer(user.getUsername())).thenReturn(user);
+        when(c.getDb().getReservations(ratePropertyRequest2().getReservationID())).thenReturn(reservations);
+        when(c.getDb().getProperty(ratePropertyRequest2().getPropertyID())).thenReturn(property);
+        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.rateProperty(ratePropertyRequest2(), user.getUsername(), user.getApiKey()));
+        assertEquals("Too soon to rate property. Wait until check-out date", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("Successfully rate property")
+    void ratePropertySuccess() throws ParseException {
+        Customer user = getCustomer();
+        ArrayList<Reservation> reservations = getReservations();
+        RentalProperty property = getProperty(new Villa());
+        property.setAverage_rating(4.5);
+        when(c.getDb().getCustomer(user.getUsername())).thenReturn(user);
+        when(c.getDb().getReservations(ratePropertyRequest2().getReservationID())).thenReturn(reservations);
+        when(c.getDb().getProperty(ratePropertyRequest2().getPropertyID())).thenReturn(property);
+        double newRating = (property.getAverage_rating() + ratePropertyRequest2().getRating())/2;
+        when(c.getDb().saveRating(ratePropertyRequest2().getPropertyID(), newRating)).thenReturn(1);
+        assertEquals("Thank you for your review!", c.rateProperty(ratePropertyRequest2(), user.getUsername(), user.getApiKey()));
+    }
+
+    @Test
+    @DisplayName("Could not rate property")
+    void ratePropertyNotSuccessful() throws ParseException {
+        Customer user = getCustomer();
+        ArrayList<Reservation> reservations = getReservations();
+        RentalProperty property = getPropertyVilla(new Villa());
+        property.setProperty_id(1);
+        when(c.getDb().getCustomer(user.getUsername())).thenReturn(user);
+        when(c.getDb().getReservations(ratePropertyRequest2().getReservationID())).thenReturn(reservations);
+        when(c.getDb().getProperty(ratePropertyRequest2().getPropertyID())).thenReturn(property);
+        double newRating = (property.getAverage_rating() + ratePropertyRequest2().getRating())/2;
+        when(c.getDb().saveRating(ratePropertyRequest2().getPropertyID(), newRating)).thenReturn(0);
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> c.rateProperty(ratePropertyRequest2(), user.getUsername(), user.getApiKey()));
+        assertEquals("Could not rate property.", exception.getMessage());
+    }
 }

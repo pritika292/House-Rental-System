@@ -8,16 +8,14 @@ import com.reservation.rentaplace.Domain.Command.CouponList;
 import com.reservation.rentaplace.Domain.Command.InvoiceGenerator;
 import com.reservation.rentaplace.Domain.Factory.FactoryProducer;
 import com.reservation.rentaplace.Domain.Factory.PropertyFactory;
-import com.reservation.rentaplace.Domain.Request.CartRequest;
-import com.reservation.rentaplace.Domain.Request.CustomerRequest;
-import com.reservation.rentaplace.Domain.Request.HostPropertyRequest;
-import com.reservation.rentaplace.Domain.Request.ReservationRequest;
+import com.reservation.rentaplace.Domain.Request.*;
 import com.reservation.rentaplace.Domain.Validator.DateValidator;
 import com.reservation.rentaplace.Domain.Validator.DateValidatorUsingDateFormat;
 import com.reservation.rentaplace.Domain.Login;
 import com.reservation.rentaplace.Exception.InvalidRequestException;
 import com.reservation.rentaplace.Exception.ResourceNotFoundException;
 import com.reservation.rentaplace.Exception.UnauthorizedException;
+import com.reservation.rentaplace.Exception.UnauthorizedUser;
 import com.reservation.rentaplace.Service.CustomerService;
 import com.reservation.rentaplace.Service.SearchPropertyService;
 import lombok.Getter;
@@ -493,35 +491,27 @@ public class Controller
             removeFromCart(cr, apikey);
         }
     }
-    @PostMapping("/rate/{confirmationNumber}/{rating}")
-    public static void rate_property(@PathVariable String confirmationNumber , @PathVariable Float rating) {
 
-    }
     @PostMapping("/hostProperty/{username}/{apikey}")
     public String hostProperty(@RequestBody HostPropertyRequest hp, @PathVariable String username, @PathVariable String apikey){
         // Validate user
         Customer user =  db.getCustomer(username);
-        if(user == null){
+        if(user == null)
             throw new ResourceNotFoundException("Invalid user.");
-        }
-        if(user.getApiKey() == null){
-            throw new UnauthorizedException("Please login");
-        }
-        if(!user.getApiKey().equals(apikey)){
+        if(user.getApiKey() == null)
+            throw new UnauthorizedException("Please login.");
+        if(!user.getApiKey().equals(apikey))
             throw new UnauthorizedException("Unauthenticated - incorrect API Key.");
-        }
 
         // This would be Villa, Resort, BeachHouse, Apartment, Studio, Motel
         String propertyType = hp.getProperty_type().toLowerCase();
 
         // Validation
         if(Constants.getPropertyClass().containsKey(propertyType)){
-            FactoryProducer producer = FactoryProducer.getInstance();
-            PropertyFactory factory = producer.getFactory(Constants.getPropertyClass().get(propertyType));
-            RentalProperty property = factory.getProperty(propertyType);
+            RentalProperty property = db.getsetProperty(propertyType);
             property = setProperty(property, hp, user.getUserID());
 
-            if(db.save(property) == 1)
+            if(db.hostProperty(property) == 1)
                 return "Hosted property successfully.";
             throw new RuntimeException("Could not host property.");
         }
@@ -547,4 +537,60 @@ public class Controller
         return property;
     }
 
+    @PostMapping("/rateProperty/{username}/{apiKey}")
+    public String rateProperty(@RequestBody RatePropertyRequest rp, @PathVariable String username, @PathVariable String apiKey) throws ParseException {
+        // User validation based on username and apiKey
+        Customer user =  db.getCustomer(username);
+        if(user == null)
+            throw new ResourceNotFoundException("Invalid user.");
+        if(user.getApiKey() == null)
+            throw new UnauthorizedException("Please login.");
+        if(!user.getApiKey().equals(apiKey))
+            throw new UnauthorizedException("Unauthenticated - incorrect API Key.");
+
+        // Check if reservation id is valid
+        Integer reservationID = rp.getReservationID();
+        ArrayList<Reservation> reservations = db.getReservations(reservationID);
+        if(reservations == null)
+            throw new InvalidRequestException("Invalid Reservation ID");
+
+        // If username doesn't match the username under reservation
+        Customer customer = reservations.get(0).getCustomer();
+        if(!customer.getUsername().equalsIgnoreCase(username))
+            throw new UnauthorizedUser("Reservation does not belong to user!");
+
+        // Fetch all the properties, check-out dates and customer name from List of reservations
+        ArrayList<Integer> propertyIDs = new ArrayList<>();
+        ArrayList<Date> checkOutDates = new ArrayList<>();
+        for(Reservation r:reservations){
+            propertyIDs.add(r.getProperty().getProperty_id());
+            checkOutDates.add(r.getCheckoutDate());
+        }
+
+        // check if property id in the request body is valid
+        RentalProperty property = db.getProperty(rp.getPropertyID());
+        if(!propertyIDs.contains(property.getProperty_id()))
+            throw new InvalidRequestException("Property ID does not belong to reservation.");
+
+        // check if today's date is on or after the checkout date of property
+        SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yy");
+        String today = sdf.format(new Date());
+        Date todaysDate = sdf.parse(today);
+
+        int property_index = propertyIDs.indexOf(property.getProperty_id());
+        Date checkOutDate = checkOutDates.get(property_index);
+        if (todaysDate.compareTo(checkOutDate) <1)
+            throw new InvalidRequestException("Too soon to rate property. Wait until check-out date");
+
+        // form new rating and update in DB
+        double avgRating = property.getAverage_rating();
+        double newAvgRating = (avgRating + rp.getRating())/2;
+        property.setAverage_rating(newAvgRating);
+
+        if(db.saveRating(property.getProperty_id(), newAvgRating) == 1)
+            return "Thank you for your review!";
+        else
+            throw new RuntimeException("Could not rate property.");
+
+    }
 }

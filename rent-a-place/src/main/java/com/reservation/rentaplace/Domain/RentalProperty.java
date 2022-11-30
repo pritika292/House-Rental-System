@@ -23,7 +23,7 @@ public abstract class RentalProperty implements Property
     private Integer pet_friendly;
     private Integer wifi_avail;
     private Integer carpet_area;
-    private Float average_rating;
+    private double average_rating;
     private Integer owner_id;
     private Integer availability;
     private String owner_name;
