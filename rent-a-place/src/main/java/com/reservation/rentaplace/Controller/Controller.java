@@ -260,26 +260,21 @@ public class Controller
 
 
     @PostMapping("getPastReservations/owner/{uname}/{apiKey}")
-    public ResponseEntity<Object> getReservationofOwner(@PathVariable String uname, @PathVariable String apiKey)
-    {
+    public ResponseEntity<Object> getReservationofOwner(@PathVariable String uname, @PathVariable String apiKey) {
         Customer user = authenticateUser(uname, apiKey);
-        if (user == null)
-        {
+        if (user == null) {
             throw new UnauthorizedException("Unauthorized or Invalid user");
         }
         List<Reservation> userReservations = new ArrayList<>();
         List<Reservation> reservations = db.getReservations();
-        for (Reservation r: reservations)
-        {
-           if (r.getProperty().getOwner_id() == user.getUserID())
-           {
-               userReservations.add(r);
-           }
+        for (Reservation r : reservations) {
+            if (r.getProperty().getOwner_id() == user.getUserID()) {
+                userReservations.add(r);
+            }
         }
         List<JSONObject> entities = new ArrayList<>();
         SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
-        for (int i = 0; i < userReservations.size(); i++)
-        {
+        for (int i = 0; i < userReservations.size(); i++) {
             JSONObject entity = new JSONObject();
             entity.put("Confirmation Number", userReservations.get(i).getConfirmationNumber());
             entity.put("Property Name", userReservations.get(i).getProperty().getProperty_name());
@@ -290,7 +285,6 @@ public class Controller
         }
         return new ResponseEntity<Object>(entities, HttpStatus.OK);
     }
-    //Below methods are for reference for Bhanuprakash - Sailesh Sriram
 
 //    @PostMapping("getPastReservations/renter/{uname}/{apiKey}")
 //    public List<UserReservation> getReservationforRenter(@PathVariable String uname, @PathVariable String apiKey)
