@@ -6,8 +6,6 @@ import com.reservation.rentaplace.DAO.DBMgr;
 import com.reservation.rentaplace.Domain.Command.Coupon;
 import com.reservation.rentaplace.Domain.Command.CouponList;
 import com.reservation.rentaplace.Domain.Command.InvoiceGenerator;
-import com.reservation.rentaplace.Domain.Factory.FactoryProducer;
-import com.reservation.rentaplace.Domain.Factory.PropertyFactory;
 import com.reservation.rentaplace.Domain.Request.*;
 import com.reservation.rentaplace.Domain.Validator.DateValidator;
 import com.reservation.rentaplace.Domain.Validator.DateValidatorUsingDateFormat;
@@ -15,7 +13,6 @@ import com.reservation.rentaplace.Domain.Login;
 import com.reservation.rentaplace.Exception.InvalidRequestException;
 import com.reservation.rentaplace.Exception.ResourceNotFoundException;
 import com.reservation.rentaplace.Exception.UnauthorizedException;
-import com.reservation.rentaplace.Exception.UnauthorizedUser;
 import com.reservation.rentaplace.Service.CustomerService;
 import com.reservation.rentaplace.Service.SearchPropertyService;
 import lombok.Getter;
@@ -557,7 +554,7 @@ public class Controller
         // If username doesn't match the username under reservation
         Customer customer = reservations.get(0).getCustomer();
         if(!customer.getUsername().equalsIgnoreCase(username))
-            throw new UnauthorizedUser("Reservation does not belong to user!");
+            throw new UnauthorizedException("Reservation does not belong to user!");
 
         // Fetch all the properties, check-out dates and customer name from List of reservations
         ArrayList<Integer> propertyIDs = new ArrayList<>();
@@ -584,10 +581,12 @@ public class Controller
 
         // form new rating and update in DB
         double avgRating = property.getAverage_rating();
-        double newAvgRating = (avgRating + rp.getRating())/2;
+        int numberOfReviews = property.getNumber_of_reviews();
+        double newAvgRating = (avgRating*numberOfReviews + rp.getRating())/(++numberOfReviews);
         property.setAverage_rating(newAvgRating);
+        property.setNumber_of_reviews(numberOfReviews);
 
-        if(db.saveRating(property.getProperty_id(), newAvgRating) == 1)
+        if(db.saveRating(property.getProperty_id(), newAvgRating, numberOfReviews) == 1)
             return "Thank you for your review!";
         else
             throw new RuntimeException("Could not rate property.");

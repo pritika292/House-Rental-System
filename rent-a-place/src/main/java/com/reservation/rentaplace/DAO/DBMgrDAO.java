@@ -35,5 +35,5 @@ public interface DBMgrDAO {
 
     public int makeReservation(ArrayList<Reservation> reservations);
 
-    public Integer saveRating(Integer propertyID, double newRating);
+    public Integer saveRating(Integer propertyID, double newRating, Integer numberOfReviews);
     }

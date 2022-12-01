@@ -204,7 +204,7 @@ class ControllerTest {
     @DisplayName("Invalid user for add to cart")
     void invalidUserAddToCart(){
         when(c.getDb().getCustomer("jerry012")).thenReturn(null);
-        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> c.addToCart(new CartRequest(), "xxxxx"));
+        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.addToCart(new CartRequest(), "xxxxx"));
         assertEquals("Invalid user", exception.getMessage());
     }
 
@@ -493,7 +493,7 @@ class ControllerTest {
         customer.setCart(cart);
         CartRequest cr = getCartRequest();
         when(c.getDb().getCustomer(customer.getUsername())).thenReturn(null);
-        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> c.removeFromCart(cr, "xxxxx"));
+        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.removeFromCart(cr, "xxxxx"));
         assertEquals("Invalid user", exception.getMessage());
     }
     @Test
@@ -653,8 +653,6 @@ class ControllerTest {
         RentalProperty property = new Villa();
         PropertyFactory factory = new FirstClassFactory();
         when(c.getDb().getCustomer(user.getUsername())).thenReturn(user);
-//        when(c.getProducer().getFactory("FirstClass")).thenReturn(factory);
-
         PropertyFactory factory1 = Mockito.spy(factory);
         Mockito.doReturn(property).when(factory1).getProperty("villa");
         when(c.getDb().hostProperty(property)).thenReturn(0);
@@ -663,7 +661,7 @@ class ControllerTest {
     }
     RatePropertyRequest ratePropertyRequest(){
         RatePropertyRequest rp = new RatePropertyRequest();
-        rp.setRating(4.5f);
+        rp.setRating(4.5);
         rp.setPropertyID(4);
         rp.setReservationID(12);
         return rp;
@@ -746,7 +744,7 @@ class ControllerTest {
         ArrayList<Reservation> reservations = getInvalidUserReservation();
         when(c.getDb().getCustomer(user.getUsername())).thenReturn(user);
         when(c.getDb().getReservations(ratePropertyRequest().getReservationID())).thenReturn(reservations);
-        UnauthorizedUser exception = assertThrows(UnauthorizedUser.class, () -> c.rateProperty(ratePropertyRequest(), user.getUsername(), user.getApiKey()));
+        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.rateProperty(ratePropertyRequest(), user.getUsername(), user.getApiKey()));
         assertEquals("Reservation does not belong to user!", exception.getMessage());
     }
     ArrayList<Reservation> getInvalidDateReservation() throws ParseException {
@@ -765,7 +763,7 @@ class ControllerTest {
         return reservations;
     }
 
-    RatePropertyRequest ratePropertyRequest2(){
+    RatePropertyRequest ratePropertyValidRequest(){
         RatePropertyRequest rp = new RatePropertyRequest();
         rp.setRating(4.5);
         rp.setPropertyID(1);
@@ -808,9 +806,9 @@ class ControllerTest {
         ArrayList<Reservation> reservations = getInvalidDateReservation();
         RentalProperty property = getProperty(new Villa());
         when(c.getDb().getCustomer(user.getUsername())).thenReturn(user);
-        when(c.getDb().getReservations(ratePropertyRequest2().getReservationID())).thenReturn(reservations);
-        when(c.getDb().getProperty(ratePropertyRequest2().getPropertyID())).thenReturn(property);
-        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.rateProperty(ratePropertyRequest2(), user.getUsername(), user.getApiKey()));
+        when(c.getDb().getReservations(ratePropertyValidRequest().getReservationID())).thenReturn(reservations);
+        when(c.getDb().getProperty(ratePropertyValidRequest().getPropertyID())).thenReturn(property);
+        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.rateProperty(ratePropertyValidRequest(), user.getUsername(), user.getApiKey()));
         assertEquals("Too soon to rate property. Wait until check-out date", exception.getMessage());
     }
 
@@ -821,12 +819,12 @@ class ControllerTest {
         ArrayList<Reservation> reservations = getReservations();
         RentalProperty property = getProperty(new Villa());
         property.setAverage_rating(4.5);
+        property.setNumber_of_reviews(10);
         when(c.getDb().getCustomer(user.getUsername())).thenReturn(user);
-        when(c.getDb().getReservations(ratePropertyRequest2().getReservationID())).thenReturn(reservations);
-        when(c.getDb().getProperty(ratePropertyRequest2().getPropertyID())).thenReturn(property);
-        double newRating = (property.getAverage_rating() + ratePropertyRequest2().getRating())/2;
-        when(c.getDb().saveRating(ratePropertyRequest2().getPropertyID(), newRating)).thenReturn(1);
-        assertEquals("Thank you for your review!", c.rateProperty(ratePropertyRequest2(), user.getUsername(), user.getApiKey()));
+        when(c.getDb().getReservations(ratePropertyValidRequest().getReservationID())).thenReturn(reservations);
+        when(c.getDb().getProperty(ratePropertyValidRequest().getPropertyID())).thenReturn(property);
+        when(c.getDb().saveRating(ratePropertyValidRequest().getPropertyID(), 4.5, property.getNumber_of_reviews() + 1)).thenReturn(1);
+        assertEquals("Thank you for your review!", c.rateProperty(ratePropertyValidRequest(), user.getUsername(), user.getApiKey()));
     }
 
     @Test
@@ -836,12 +834,12 @@ class ControllerTest {
         ArrayList<Reservation> reservations = getReservations();
         RentalProperty property = getPropertyVilla(new Villa());
         property.setProperty_id(1);
+        property.setNumber_of_reviews(10);
         when(c.getDb().getCustomer(user.getUsername())).thenReturn(user);
-        when(c.getDb().getReservations(ratePropertyRequest2().getReservationID())).thenReturn(reservations);
-        when(c.getDb().getProperty(ratePropertyRequest2().getPropertyID())).thenReturn(property);
-        double newRating = (property.getAverage_rating() + ratePropertyRequest2().getRating())/2;
-        when(c.getDb().saveRating(ratePropertyRequest2().getPropertyID(), newRating)).thenReturn(0);
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> c.rateProperty(ratePropertyRequest2(), user.getUsername(), user.getApiKey()));
+        when(c.getDb().getReservations(ratePropertyValidRequest().getReservationID())).thenReturn(reservations);
+        when(c.getDb().getProperty(ratePropertyValidRequest().getPropertyID())).thenReturn(property);
+        when(c.getDb().saveRating(ratePropertyValidRequest().getPropertyID(), 4.5,property.getNumber_of_reviews()+1 )).thenReturn(0);
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> c.rateProperty(ratePropertyValidRequest(), user.getUsername(), user.getApiKey()));
         assertEquals("Could not rate property.", exception.getMessage());
     }
 }
