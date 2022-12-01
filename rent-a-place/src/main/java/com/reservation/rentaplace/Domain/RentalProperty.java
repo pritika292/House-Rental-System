@@ -29,6 +29,7 @@ public abstract class RentalProperty implements Property
     private String owner_name;
     private String owner_email;
     private String owner_phone_number;
+    private Integer number_of_reviews;
 
     public float getPrice() {
         return price_per_night;
