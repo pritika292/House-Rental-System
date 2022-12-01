@@ -86,21 +86,14 @@ public class Controller
     }
     @PostMapping("/logout/{username}/{apikey}")
     public String logout(@PathVariable String username, @PathVariable String apikey) {
-        Customer c = db.getCustomer(username);
-        if (c != null) {
-            if(c.getApiKey() == null){
-                throw new UnauthorizedException("Please login");
-            }
-            if(!c.getApiKey().equals(apikey)){
-                throw new UnauthorizedException("Unauthenticated - incorrect API Key.");
-            }
-            if (db.endSession(c) == 1) {
-                return "Logged out successfully.";
-            } else
-                throw new RuntimeException("Error occurred.");
-        } else {
-            throw new ResourceNotFoundException("Invalid user");
+        Customer c = authenticateUser(username,apikey);
+        if(c == null){
+            throw new UnauthorizedException("Unauthorized or Invalid user");
         }
+        if (db.endSession(c) == 1) {
+            return "Logged out successfully.";
+        } else
+            throw new RuntimeException("Error occurred.");
     }
 
     @PostMapping("/view")
@@ -545,17 +538,10 @@ public class Controller
     @PostMapping("/reserve/{apikey}")
     public String createReservation(@RequestBody ReservationRequest r, @PathVariable String apikey) {
         String username = r.getUsername();
-        Customer user = db.getCustomer(username);
+        Customer user = authenticateUser(username,apikey);
         if(user == null){
-            throw new ResourceNotFoundException("Invalid User");
+            throw new UnauthorizedException("Unauthorized or Invalid user");
         }
-        if(user.getApiKey() == null){
-            throw new UnauthorizedException("Please login");
-        }
-        if(!user.getApiKey().equals(apikey)){
-            throw new UnauthorizedException("Unauthenticated - incorrect API Key.");
-        }
-        int userId = user.getUserID();
         Cart userCart = user.getCart();
         ArrayList<Reservation> reservationList = db.getReservations();
         if(!userCart.verifyCart(reservationList)){
@@ -655,13 +641,9 @@ public class Controller
     @PostMapping("/rateProperty/{username}/{apiKey}")
     public String rateProperty(@RequestBody RatePropertyRequest rp, @PathVariable String username, @PathVariable String apiKey) throws ParseException {
         // User validation based on username and apiKey
-        Customer user =  db.getCustomer(username);
+        Customer user =  authenticateUser(username,apiKey);
         if(user == null)
-            throw new ResourceNotFoundException("Invalid user.");
-        if(user.getApiKey() == null)
-            throw new UnauthorizedException("Please login.");
-        if(!user.getApiKey().equals(apiKey))
-            throw new UnauthorizedException("Unauthenticated - incorrect API Key.");
+            throw new UnauthorizedException("Unauthorized or Invalid user");
 
         // Check if reservation id is valid
         Integer reservationID = rp.getReservationID();
