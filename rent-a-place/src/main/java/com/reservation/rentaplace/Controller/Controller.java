@@ -272,7 +272,7 @@ public class Controller
         }
         if (userReservations.size() == 0)
         {
-            throw new ResourceNotFoundException("User does not have any properties");
+            return new ResponseEntity<Object>("No reservations for this user's property or user does not have properties hosted", HttpStatus.OK);
         }
         List<JSONObject> entities = new ArrayList<>();
         SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");

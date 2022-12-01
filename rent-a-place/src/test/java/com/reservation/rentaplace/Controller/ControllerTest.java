@@ -1072,6 +1072,7 @@ class ControllerTest {
     @DisplayName("Get all past reservations that contain property of owner")
     void getReservationsOfOwner() throws ParseException {
         Customer owner = new Customer();
+
         owner.setUsername("cherry012");
         owner.setPassword("cher123");
         owner.setApiKey("xxxxx");
@@ -1122,7 +1123,7 @@ class ControllerTest {
         when(c.getDb().getCustomer(owner.getUsername())).thenReturn(owner);
         when(db.getReservations()).thenReturn(reservations);
         ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> c.getPastReservationofOwner("cherry012", "xxxxx"));
-        assertEquals("User does not have any properties", exception.getMessage());
+        assertEquals("No reservations for this user's property or user does not have properties hosted", exception.getMessage());
     }
     @Test
     @DisplayName("Get all past reservations of person who is invalid user")
