@@ -46,230 +46,6 @@ class ControllerTest {
         c.setDb(db);
         c.getDb().setJdbcTemplate(jdbcTemplate);
     }
-    @Test
-    @DisplayName("Username should not exceed length 10")
-    void invalidUsernameForRegister(){
-        CustomerRequest cr = new CustomerRequest();
-        cr.setUsername("Garrynewuser10112");
-        cr.setName("Garry");
-        cr.setPassword("Garr123");
-        cr.setEmail("Garry@gmail.com");
-        cr.setPhone_number("967-295-2987");
-        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.register(cr));
-        assertEquals("Username cannot exceed the length of 10", exception.getMessage());
-    }
-
-    @Test
-    @DisplayName("Email id of user should be valid")
-    void invalidEmailForRegister(){
-        CustomerRequest cr = new CustomerRequest();
-        cr.setUsername("Garry012");
-        cr.setName("Garry");
-        cr.setPassword("Garr123");
-        cr.setEmail("Garry.com");
-        cr.setPhone_number("967-295-2987");
-        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.register(cr));
-        assertEquals("Invalid email id", exception.getMessage());
-    }
-
-    @Test
-    @DisplayName("Phone number of user should be valid")
-    void invalidPhoneForRegister(){
-        CustomerRequest cr = new CustomerRequest();
-        cr.setUsername("Garry012");
-        cr.setName("Garry");
-        cr.setPassword("Garr123");
-        cr.setEmail("Garry@gmail.com");
-        cr.setPhone_number("967-295-298723");
-        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.register(cr));
-        assertEquals("Invalid phone number", exception.getMessage());
-    }
-    @Test
-    @DisplayName("Password of user cannot be empty")
-    void invalidPasswordForRegister(){
-        CustomerRequest cr = new CustomerRequest();
-        cr.setUsername("Garry012");
-        cr.setName("Garry");
-        cr.setPassword("");
-        cr.setEmail("Garry@gmail.com");
-        cr.setPhone_number("967-295-2987");
-        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.register(cr));
-        assertEquals("Password cannot empty. Please enter valid password.", exception.getMessage());
-    }
-    @Test
-    @DisplayName("Successful registration of user")
-    void successForRegister(){
-        CustomerRequest cr = new CustomerRequest();
-        cr.setUsername("Garry012");
-        cr.setName("Garry");
-        cr.setPassword("garr123");
-        cr.setEmail("Garry@gmail.com");
-        cr.setPhone_number("967-295-2987");
-        when(c.getDb().createCart()).thenReturn(1);
-        when(c.getDb().save(cr,1)).thenReturn(1);
-        assertEquals(cr.getName()+ " registered successfully.", c.register(cr));
-    }
-
-    @Test
-    @DisplayName("Invalid username in Login")
-    void invalidUsernameLogin(){
-        Login l = new Login();
-        l.setUsername("Garry012");
-        l.setPassword("garr123");
-        when(c.getDb().getCustomer(l.getUsername())).thenReturn(null);
-        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> c.login(l));
-        assertEquals("Login unsuccessful - invalid username", exception.getMessage());
-    }
-
-    @Test
-    @DisplayName("Invalid password in Login")
-    void invalidPasswordForLogin(){
-        Login l = new Login();
-        l.setUsername("cherry012");
-        l.setPassword("cher012");
-        Customer customer = new Customer();
-        customer.setUsername("cherry012");
-        customer.setPassword("cher123");
-        when(c.getDb().getCustomer(l.getUsername())).thenReturn(customer);
-        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.login(l));
-        assertEquals("Login unsuccessful - invalid password", exception.getMessage());
-    }
-    @Test
-    @DisplayName("Successful login of user")
-    void successfulLogin(){
-        Login l = new Login();
-        l.setUsername("cherry012");
-        l.setPassword("cher123");
-        Customer customer = new Customer();
-        customer.setUsername("cherry012");
-        customer.setPassword("cher123");
-        customer.setUserID(1);
-        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
-        when(c.getDb().generateMD5Hashvalue(customer.getUsername())).thenReturn("xxxxx");
-        when(c.getDb().createSession(customer, "xxxxx")).thenReturn(1);
-        assertEquals("Login successful. API Key : " + "xxxxx", c.login(l));
-    }
-
-    @Test
-    @DisplayName("Invalid session for logout")
-    void invalidLogout(){
-        Customer customer = new Customer();
-        customer.setUsername("cherry012");
-        customer.setPassword("cher123");
-        customer.setApiKey(null);
-        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
-        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.logout(customer.getUsername(), "xxxxx"));
-        assertEquals("Please login", exception.getMessage());
-    }
-
-    @Test
-    @DisplayName("Invalid user for logout")
-    void invalidUserLogout(){
-        when(c.getDb().getCustomer("jerry012")).thenReturn(null);
-        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> c.logout("jerry012", "xxxxx"));
-        assertEquals("Invalid user", exception.getMessage());
-    }
-
-    @Test
-    @DisplayName("Invalid API key for logout")
-    void invalidAPIKeyLogout(){
-        Customer customer = new Customer();
-        customer.setUsername("cherry012");
-        customer.setPassword("cher123");
-        customer.setApiKey("yyyyy");
-        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
-        // when(c.getDb().generateMD5Hashvalue(customer.getUsername())).thenReturn("yyyyy");
-        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.logout(customer.getUsername(), "xxxxx"));
-        assertEquals("Unauthenticated - incorrect API Key.", exception.getMessage());
-    }
-
-    @Test
-    @DisplayName("Successful logout")
-    void successfulLogout(){
-        Customer customer = new Customer();
-        customer.setUsername("cherry012");
-        customer.setPassword("cher123");
-        customer.setApiKey("yyyyy");
-        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
-        when(c.getDb().endSession(customer)).thenReturn(1);
-        assertEquals("Logged out successfully.", c.logout(customer.getUsername(), "yyyyy"));
-    }
-
-
-    @Test
-    @DisplayName("Invalid user for add to cart")
-    void invalidUserAddToCart(){
-        when(c.getDb().getCustomer("jerry012")).thenReturn(null);
-        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.addToCart(new CartRequest(), "xxxxx"));
-        assertEquals("Invalid user", exception.getMessage());
-    }
-
-    @Test
-    @DisplayName("Invalid session for add to cart")
-    void invalidSessionAddToCart(){
-        Customer customer = getCustomer();
-        customer.setApiKey(null);
-        CartRequest cr = new CartRequest();
-        cr.setUsername("cherry012");
-        cr.setPropertyID(1);
-        cr.setCheckinDate("12-12-2022");
-        cr.setCheckoutDate("14-12-2022");
-        when(c.getDb().getCustomer(cr.getUsername())).thenReturn(customer);
-        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.addToCart(cr, "xxxxx"));
-        assertEquals("Please login", exception.getMessage());
-    }
-
-    @Test
-    @DisplayName("Invalid API Key for add to cart")
-    void invalidAPIKeyAddToCart(){
-        Customer customer = getCustomer();
-        customer.setApiKey("yyyyy");
-        CartRequest cr = new CartRequest();
-        cr.setUsername("cherry012");
-        cr.setPropertyID(1);
-        cr.setCheckinDate("12-12-2022");
-        cr.setCheckoutDate("14-12-2022");
-        when(c.getDb().getCustomer(cr.getUsername())).thenReturn(customer);
-        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.addToCart(cr, "xxxxx"));
-        assertEquals("Unauthenticated - incorrect API Key.", exception.getMessage());
-    }
-//    @Test
-//    @DisplayName("Invalid user for add to cart")
-//    void invalidUserAddToCart(){
-//        when(c.getDb().getCustomer("jerry012")).thenReturn(null);
-//        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> c.addToCart(new CartRequest(), "xxxxx"));
-//        assertEquals("Invalid user", exception.getMessage());
-//    }
-//
-//    @Test
-//    @DisplayName("Invalid session for add to cart")
-//    void invalidSessionAddToCart(){
-//        Customer customer = getCustomer();
-//        customer.setApiKey(null);
-//        CartRequest cr = new CartRequest();
-//        cr.setUsername("cherry012");
-//        cr.setPropertyID(1);
-//        cr.setCheckinDate("12-12-2022");
-//        cr.setCheckoutDate("14-12-2022");
-//        when(c.getDb().getCustomer(cr.getUsername())).thenReturn(customer);
-//        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.addToCart(cr, "xxxxx"));
-//        assertEquals("Please login", exception.getMessage());
-//    }
-//
-//    @Test
-//    @DisplayName("Invalid API Key for add to cart")
-//    void invalidAPIKeyAddToCart(){
-//        Customer customer = getCustomer();
-//        customer.setApiKey("yyyyy");
-//        CartRequest cr = new CartRequest();
-//        cr.setUsername("cherry012");
-//        cr.setPropertyID(1);
-//        cr.setCheckinDate("12-12-2022");
-//        cr.setCheckoutDate("14-12-2022");
-//        when(c.getDb().getCustomer(cr.getUsername())).thenReturn(customer);
-//        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.addToCart(cr, "xxxxx"));
-//        assertEquals("Unauthenticated - incorrect API Key.", exception.getMessage());
-//    }
 
     Cart getEmptyCart(){
         Cart cart = new Cart();
@@ -287,282 +63,6 @@ class ControllerTest {
         customer.setApiKey("xxxxx");
         return customer;
     }
-    @Test
-    @DisplayName("Checkout date before checkin date in add to cart")
-    void invalidDatesAddToCart(){
-        Cart cart = getEmptyCart();
-        Customer customer = getCustomer();
-        customer.setCart(cart);
-        CartRequest cr = new CartRequest();
-        cr.setUsername("cherry012");
-        cr.setPropertyID(1);
-        cr.setCheckinDate("12-14-2022");
-        cr.setCheckoutDate("12-12-2022");
-        RentalProperty property = new Villa();
-        property.setPrice_per_night(70f);
-        when(c.getDb().getCustomer(cr.getUsername())).thenReturn(customer);
-        when(c.getDb().checkProperty(cr.getPropertyID())).thenReturn("villa");
-        when(c.getDb().getProperty(cr.getPropertyID())).thenReturn(property);
-        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.addToCart(cr, "xxxxx"));
-        assertEquals("Checkin date is after the checkout date, please select valid dates", exception.getMessage());
-    }
-
-    @Test
-    @DisplayName("Invalid checkin date add to cart")
-    void invalidCheckinDatesAddToCart(){
-        Cart cart = getEmptyCart();
-        Customer customer = getCustomer();
-        customer.setCart(cart);
-        CartRequest cr = new CartRequest();
-        cr.setUsername("cherry012");
-        cr.setPropertyID(1);
-        cr.setCheckinDate("14-12-2022");
-        cr.setCheckoutDate("12-12-2022");
-        RentalProperty property = new Villa();
-        property.setPrice_per_night(70f);
-        when(c.getDb().getCustomer(cr.getUsername())).thenReturn(customer);
-        when(c.getDb().checkProperty(cr.getPropertyID())).thenReturn("villa");
-        when(c.getDb().getProperty(cr.getPropertyID())).thenReturn(property);
-        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.addToCart(cr, "xxxxx"));
-        assertEquals("Invalid check-in date", exception.getMessage());
-    }
-
-    @Test
-    @DisplayName("Past checkin date add to cart")
-    void pastCheckinDatesAddToCart(){
-        Cart cart = getEmptyCart();
-        Customer customer = getCustomer();
-        customer.setCart(cart);
-        CartRequest cr = new CartRequest();
-        cr.setUsername("cherry012");
-        cr.setPropertyID(1);
-        cr.setCheckinDate("11-18-2022");
-        cr.setCheckoutDate("12-12-2022");
-        RentalProperty property = new Villa();
-        property.setPrice_per_night(70f);
-        when(c.getDb().getCustomer(cr.getUsername())).thenReturn(customer);
-        when(c.getDb().checkProperty(cr.getPropertyID())).thenReturn("villa");
-        when(c.getDb().getProperty(cr.getPropertyID())).thenReturn(property);
-        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.addToCart(cr, "xxxxx"));
-        assertEquals("Please select a future checkin date.", exception.getMessage());
-    }
-
-    @Test
-    @DisplayName("Past checkout date add to cart")
-    void pastCheckoutDatesAddToCart(){
-        Cart cart = getEmptyCart();
-        Customer customer = getCustomer();
-        customer.setCart(cart);
-        CartRequest cr = new CartRequest();
-        cr.setUsername("cherry012");
-        cr.setPropertyID(1);
-        cr.setCheckinDate("12-12-2022");
-        cr.setCheckoutDate("11-12-2022");
-        RentalProperty property = new Villa();
-        property.setPrice_per_night(70f);
-        when(c.getDb().getCustomer(cr.getUsername())).thenReturn(customer);
-        when(c.getDb().checkProperty(cr.getPropertyID())).thenReturn("villa");
-        when(c.getDb().getProperty(cr.getPropertyID())).thenReturn(property);
-        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.addToCart(cr, "xxxxx"));
-        assertEquals("Please select a future checkout date.", exception.getMessage());
-    }
-
-    @Test
-    @DisplayName("Invalid checkout date add to cart")
-    void invalidCheckoutDatesAddToCart(){
-        Cart cart = getEmptyCart();
-        Customer customer = getCustomer();
-        customer.setCart(cart);
-        CartRequest cr = new CartRequest();
-        cr.setUsername("cherry012");
-        cr.setPropertyID(1);
-        cr.setCheckinDate("12-12-2022");
-        cr.setCheckoutDate("14-12-2022");
-        RentalProperty property = new Villa();
-        when(c.getDb().getCustomer(cr.getUsername())).thenReturn(customer);
-        when(c.getDb().checkProperty(cr.getPropertyID())).thenReturn("villa");
-        when(c.getDb().getProperty(cr.getPropertyID())).thenReturn(getProperty(property));
-        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.addToCart(cr, "xxxxx"));
-        assertEquals("Invalid check-out date", exception.getMessage());
-    }
-
-    @Test
-    @DisplayName("Invalid property add to cart")
-    void invalidPropertyAddToCart(){
-        Cart cart = getEmptyCart();
-        Customer customer = getCustomer();
-        customer.setCart(cart);
-        CartRequest cr = new CartRequest();
-        cr.setUsername("cherry012");
-        cr.setPropertyID(1);
-        cr.setCheckinDate("12-12-2022");
-        cr.setCheckoutDate("12-15-2022");
-        when(c.getDb().getCustomer(cr.getUsername())).thenReturn(customer);
-        when(c.getDb().checkProperty(cr.getPropertyID())).thenReturn(null);
-        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.addToCart(cr, "xxxxx"));
-        assertEquals("Invalid property id : "+ cr.getPropertyID(), exception.getMessage());
-    }
-    @Test
-    @DisplayName("Successful add to cart")
-    void successfulAddToCart(){
-        Cart cart = getEmptyCart();
-        Customer customer = getCustomer();
-        customer.setCart(cart);
-        CartRequest cr = new CartRequest();
-        cr.setUsername("cherry012");
-        cr.setPropertyID(1);
-        cr.setCheckinDate("12-12-2022");
-        cr.setCheckoutDate("12-14-2022");
-        RentalProperty property = new Villa();
-        when(c.getDb().getCustomer(cr.getUsername())).thenReturn(customer);
-        when(c.getDb().checkProperty(cr.getPropertyID())).thenReturn("villa");
-        when(c.getDb().getProperty(cr.getPropertyID())).thenReturn(getProperty(property));
-        when(c.getDb().updateCart(customer)).thenReturn(1);
-        assertEquals("Added to cart successfully", c.addToCart(cr, "xxxxx"));
-    }
-
-//    @Test
-//    @DisplayName("Invalid user view cart")
-//    void invalidUserViewCart(){
-//        Cart cart = getEmptyCart();
-//        Customer customer = getCustomer();
-//        customer.setCart(cart);
-//        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(null);
-//        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> c.viewCart(customer.getUsername(), "xxxxx"));
-//        assertEquals("Invalid User", exception.getMessage());
-//    }
-//    @Test
-//    @DisplayName("Invalid session view cart")
-//    void invalidSessionViewCart(){
-//        Cart cart = getEmptyCart();
-//        Customer customer = getCustomer();
-//        customer.setApiKey(null);
-//        customer.setCart(cart);
-//        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
-//        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.viewCart(customer.getUsername(), "yyyyy"));
-//        assertEquals("Please login", exception.getMessage());
-//    }
-//
-//    @Test
-//    @DisplayName("Invalid API key view cart")
-//    void invalidAPIKeyViewCart(){
-//        Cart cart = getEmptyCart();
-//        Customer customer = getCustomer();
-//        customer.setCart(cart);
-//        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
-//        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.viewCart(customer.getUsername(), "yyyyy"));
-//        assertEquals("Unauthenticated - incorrect API Key.", exception.getMessage());
-//    }
-    @Test
-    @DisplayName("Successful view empty cart")
-    void successfulViewEmptyCart(){
-        Cart cart = getEmptyCart();
-        Customer customer = getCustomer();
-        customer.setCart(cart);
-        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
-        List<JSONObject> entities = new ArrayList<JSONObject>();
-        JSONObject price = new JSONObject();
-        price.put("Cart value", cart.getCartValue());
-        entities.add(price);
-
-        assertEquals(new ResponseEntity<Object>(entities, HttpStatus.OK), c.viewCart(customer.getUsername(),"xxxxx"));
-    }
-
-    @Test
-    @DisplayName("Successful view cart")
-    void successfulViewCart(){
-        Cart cart = getEmptyCart();
-        Customer customer = getCustomer();
-        customer.setCart(cart);
-        RentalProperty property = new Villa();
-        SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
-        try{
-            cart.addToCart(getProperty(property),sdf.parse("12-12-2022"), sdf.parse("12-15-2022"));
-        }
-        catch(Exception e){
-            System.out.println(e);
-        }
-        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
-
-
-        assertEquals(new ResponseEntity<Object>(getViewResponse(customer.getCart(), sdf), HttpStatus.OK), c.viewCart(customer.getUsername(),"xxxxx"));
-    }
-
-    List<JSONObject> getViewResponse(Cart cart, SimpleDateFormat sdf){
-        List<JSONObject> entities = new ArrayList<JSONObject>();
-        JSONObject entity = new JSONObject();
-        entity.put("Property", cart.getProperty().get(0));
-        String inDate = sdf.format(cart.getCheckinDate().get(0));
-        entity.put("Checkin date", inDate);
-        String outDate = sdf.format(cart.getCheckoutDate().get(0));
-        entity.put("Checkout date", outDate);
-        entities.add(entity);
-        JSONObject price = new JSONObject();
-        price.put("Cart value", cart.getCartValue());
-        entities.add(price);
-        return entities;
-    }
-    RentalProperty getProperty(RentalProperty property){
-        property.setPrice_per_night(70f);
-        property.setNum_bedrooms(3);
-        property.setAvailability(1);
-        property.setNum_baths(2);
-        property.setProperty_description("Lakeside villa");
-        property.setProperty_name("Marquis");
-        property.setProperty_id(1);
-        property.setProperty_type("Villa");
-        property.setCity("Madison");
-        property.setPet_friendly(1);
-        property.setWifi_avail(1);
-        property.setCarpet_area(1900);
-        return property;
-    }
-
-
-    @Test
-    @DisplayName("Invalid user remove from cart")
-    void invalidUserDeleteCart(){
-        Cart cart = getEmptyCart();
-        Customer customer = getCustomer();
-        customer.setCart(cart);
-        CartRequest cr = getCartRequest();
-        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(null);
-        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.removeFromCart(cr, "xxxxx"));
-        assertEquals("Invalid user", exception.getMessage());
-    }
-    @Test
-    @DisplayName("Invalid session remove from cart")
-    void invalidSessionDeleteCart(){
-        Cart cart = getEmptyCart();
-        Customer customer = getCustomer();
-        customer.setApiKey(null);
-        customer.setCart(cart);
-        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
-        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.removeFromCart(getCartRequest(), "xxxxx"));
-        assertEquals("Please login", exception.getMessage());
-    }
-//    @Test
-//    @DisplayName("Invalid user remove from cart")
-//    void invalidUserDeleteCart(){
-//        Cart cart = getEmptyCart();
-//        Customer customer = getCustomer();
-//        customer.setCart(cart);
-//        CartRequest cr = getCartRequest();
-//        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(null);
-//        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> c.removeFromCart(cr, "xxxxx"));
-//        assertEquals("Invalid user", exception.getMessage());
-//    }
-//    @Test
-//    @DisplayName("Invalid session remove from cart")
-//    void invalidSessionDeleteCart(){
-//        Cart cart = getEmptyCart();
-//        Customer customer = getCustomer();
-//        customer.setApiKey(null);
-//        customer.setCart(cart);
-//        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
-//        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.removeFromCart(getCartRequest(), "xxxxx"));
-//        assertEquals("Please login", exception.getMessage());
-//    }
 
     CartRequest getCartRequest(){
         CartRequest cr = new CartRequest();
@@ -571,45 +71,6 @@ class ControllerTest {
         cr.setCheckinDate("12-12-2022");
         cr.setCheckoutDate("12-14-2022");
         return cr;
-    }
-//    @Test
-//    @DisplayName("Invalid API key remove from cart")
-//    void invalidAPIKeyDeleteCart(){
-//        Cart cart = getEmptyCart();
-//        Customer customer = getCustomer();
-//        customer.setCart(cart);
-//        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
-//        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.removeFromCart(getCartRequest(), "yyyyy"));
-//        assertEquals("Unauthenticated - incorrect API Key.", exception.getMessage());
-//    }
-
-    @Test
-    @DisplayName("Remove from cart when property does not exist/ empty cart")
-    void invalidPropertyDeleteCart(){
-        Cart cart = getEmptyCart();
-        Customer customer = getCustomer();
-        customer.setCart(cart);
-        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
-        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> c.removeFromCart(getCartRequest(), "xxxxx"));
-        assertEquals("Property does not exist in cart", exception.getMessage());
-    }
-    @Test
-    @DisplayName("Remove from cart successfully")
-    void successfulDeleteCart(){
-        Cart cart = getEmptyCart();
-        Customer customer = getCustomer();
-        RentalProperty property = new Villa();
-        SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
-        try{
-            cart.addToCart(getProperty(property), sdf.parse("12-12-2022"), sdf.parse("12-14-2022"));
-        }
-        catch(Exception e){
-            System.out.println(e);
-        }
-        customer.setCart(cart);
-        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
-        when(c.getDb().updateCart(customer)).thenReturn(1);
-        assertEquals("Removed from cart successfully", c.removeFromCart(getCartRequest(), "xxxxx"));
     }
     HostPropertyRequest hostPropertyRequest(){
         HostPropertyRequest hp = new HostPropertyRequest();
@@ -643,55 +104,523 @@ class ControllerTest {
         return hp;
     }
 
+    List<JSONObject> getViewResponse(Cart cart, SimpleDateFormat sdf){
+        List<JSONObject> entities = new ArrayList<JSONObject>();
+        JSONObject entity = new JSONObject();
+        entity.put("Property", cart.getProperty().get(0));
+        String inDate = sdf.format(cart.getCheckinDate().get(0));
+        entity.put("Checkin date", inDate);
+        String outDate = sdf.format(cart.getCheckoutDate().get(0));
+        entity.put("Checkout date", outDate);
+        entities.add(entity);
+        JSONObject price = new JSONObject();
+        price.put("Cart value", cart.getCartValue());
+        entities.add(price);
+        return entities;
+    }
+    RentalProperty getProperty(RentalProperty property){
+        property.setPrice_per_night(70f);
+        property.setNum_bedrooms(3);
+        property.setAvailability(1);
+        property.setNum_baths(2);
+        property.setProperty_description("Lakeside villa");
+        property.setProperty_name("Marquis");
+        property.setProperty_id(1);
+        property.setProperty_type("Villa");
+        property.setCity("Madison");
+        property.setPet_friendly(1);
+        property.setWifi_avail(1);
+        property.setCarpet_area(1900);
+        return property;
+    }
+
     @Test
-    @DisplayName("Host a Villa")
+    @DisplayName("Register - Username should not exceed length 10")
+    void invalidUsernameForRegister(){
+        CustomerRequest cr = new CustomerRequest();
+        cr.setUsername("Garrynewuser10112");
+        cr.setName("Garry");
+        cr.setPassword("Garr123");
+        cr.setEmail("Garry@gmail.com");
+        cr.setPhone_number("967-295-2987");
+        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.register(cr));
+        assertEquals("Username cannot exceed the length of 10", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("Register - Email id of user should be valid")
+    void invalidEmailForRegister(){
+        CustomerRequest cr = new CustomerRequest();
+        cr.setUsername("Garry012");
+        cr.setName("Garry");
+        cr.setPassword("Garr123");
+        cr.setEmail("Garry.com");
+        cr.setPhone_number("967-295-2987");
+        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.register(cr));
+        assertEquals("Invalid email id", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("Register - Phone number of user should be valid")
+    void invalidPhoneForRegister(){
+        CustomerRequest cr = new CustomerRequest();
+        cr.setUsername("Garry012");
+        cr.setName("Garry");
+        cr.setPassword("Garr123");
+        cr.setEmail("Garry@gmail.com");
+        cr.setPhone_number("967-295-298723");
+        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.register(cr));
+        assertEquals("Invalid phone number", exception.getMessage());
+    }
+    @Test
+    @DisplayName("Register - Password of user cannot be empty")
+    void invalidPasswordForRegister(){
+        CustomerRequest cr = new CustomerRequest();
+        cr.setUsername("Garry012");
+        cr.setName("Garry");
+        cr.setPassword("");
+        cr.setEmail("Garry@gmail.com");
+        cr.setPhone_number("967-295-2987");
+        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.register(cr));
+        assertEquals("Password cannot empty. Please enter valid password.", exception.getMessage());
+    }
+    @Test
+    @DisplayName("Register - Successful registration of user")
+    void successForRegister(){
+        CustomerRequest cr = new CustomerRequest();
+        cr.setUsername("Garry012");
+        cr.setName("Garry");
+        cr.setPassword("garr123");
+        cr.setEmail("Garry@gmail.com");
+        cr.setPhone_number("967-295-2987");
+        when(c.getDb().createCart()).thenReturn(1);
+        when(c.getDb().save(cr,1)).thenReturn(1);
+        assertEquals(cr.getName()+ " registered successfully.", c.register(cr));
+    }
+
+    @Test
+    @DisplayName("Login - Invalid username in Login")
+    void invalidUsernameLogin(){
+        Login l = new Login();
+        l.setUsername("Garry012");
+        l.setPassword("garr123");
+        when(c.getDb().getCustomer(l.getUsername())).thenReturn(null);
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> c.login(l));
+        assertEquals("Login unsuccessful - invalid username", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("Login - Invalid password in Login")
+    void invalidPasswordForLogin(){
+        Login l = new Login();
+        l.setUsername("cherry012");
+        l.setPassword("cher012");
+        Customer customer = new Customer();
+        customer.setUsername("cherry012");
+        customer.setPassword("cher123");
+        when(c.getDb().getCustomer(l.getUsername())).thenReturn(customer);
+        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.login(l));
+        assertEquals("Login unsuccessful - invalid password", exception.getMessage());
+    }
+    @Test
+    @DisplayName("Login - Successful login of user")
+    void successfulLogin(){
+        Login l = new Login();
+        l.setUsername("cherry012");
+        l.setPassword("cher123");
+        Customer customer = new Customer();
+        customer.setUsername("cherry012");
+        customer.setPassword("cher123");
+        customer.setUserID(1);
+        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
+        when(c.getDb().generateMD5Hashvalue(customer.getUsername())).thenReturn("xxxxx");
+        when(c.getDb().createSession(customer, "xxxxx")).thenReturn(1);
+        assertEquals("Login successful. API Key : " + "xxxxx", c.login(l));
+    }
+
+    @Test
+    @DisplayName("Logout - Invalid session for logout")
+    void invalidLogout(){
+        Customer customer = getCustomer();
+        customer.setApiKey(null);
+        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
+        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.logout(customer.getUsername(), "xxxxx"));
+        assertEquals("Unauthorized or Invalid user", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("Logout - Invalid user for logout")
+    void invalidUserLogout(){
+        when(c.getDb().getCustomer("jerry012")).thenReturn(null);
+        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.logout("jerry012", "xxxxx"));
+        assertEquals("Unauthorized or Invalid user", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("Logout - Invalid API key for logout")
+    void invalidAPIKeyLogout(){
+        Customer customer = getCustomer();
+        customer.setApiKey("yyyyy");
+        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
+        // when(c.getDb().generateMD5Hashvalue(customer.getUsername())).thenReturn("yyyyy");
+        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.logout(customer.getUsername(), "xxxxx"));
+        assertEquals("Unauthorized or Invalid user", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("Logout - Successful logout")
+    void successfulLogout(){
+        Customer customer = getCustomer();
+        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
+        when(c.getDb().endSession(customer)).thenReturn(1);
+        assertEquals("Logged out successfully.", c.logout(customer.getUsername(), "xxxxx"));
+    }
+
+
+    @Test
+    @DisplayName("AddToCart - Invalid user for add to cart")
+    void invalidUserAddToCart(){
+        when(c.getDb().getCustomer("jerry012")).thenReturn(null);
+        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.addToCart(new CartRequest(), "xxxxx"));
+        assertEquals("Unauthorized or Invalid user", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("AddToCart - Invalid session for add to cart")
+    void invalidSessionAddToCart(){
+        Customer customer = getCustomer();
+        customer.setApiKey(null);
+        CartRequest cr = new CartRequest();
+        cr.setUsername("cherry012");
+        cr.setPropertyID(1);
+        cr.setCheckinDate("12-12-2022");
+        cr.setCheckoutDate("14-12-2022");
+        when(c.getDb().getCustomer(cr.getUsername())).thenReturn(customer);
+        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.addToCart(cr, "xxxxx"));
+        assertEquals("Unauthorized or Invalid user", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("AddToCart - Invalid API Key for add to cart")
+    void invalidAPIKeyAddToCart(){
+        Customer customer = getCustomer();
+        customer.setApiKey("yyyyy");
+        CartRequest cr = new CartRequest();
+        cr.setUsername("cherry012");
+        cr.setPropertyID(1);
+        cr.setCheckinDate("12-12-2022");
+        cr.setCheckoutDate("14-12-2022");
+        when(c.getDb().getCustomer(cr.getUsername())).thenReturn(customer);
+        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.addToCart(cr, "xxxxx"));
+        assertEquals("Unauthorized or Invalid user", exception.getMessage());
+    }
+    @Test
+    @DisplayName("AddToCart - Checkout date before checkin date in add to cart")
+    void invalidDatesAddToCart(){
+        Cart cart = getEmptyCart();
+        Customer customer = getCustomer();
+        customer.setCart(cart);
+        CartRequest cr = new CartRequest();
+        cr.setUsername("cherry012");
+        cr.setPropertyID(1);
+        cr.setCheckinDate("12-14-2022");
+        cr.setCheckoutDate("12-12-2022");
+        RentalProperty property = new Villa();
+        property.setPrice_per_night(70f);
+        when(c.getDb().getCustomer(cr.getUsername())).thenReturn(customer);
+        when(c.getDb().checkProperty(cr.getPropertyID())).thenReturn("villa");
+        when(c.getDb().getProperty(cr.getPropertyID())).thenReturn(property);
+        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.addToCart(cr, "xxxxx"));
+        assertEquals("Checkin date is after the checkout date, please select valid dates", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("AddToCart - Invalid checkin date add to cart")
+    void invalidCheckinDatesAddToCart(){
+        Cart cart = getEmptyCart();
+        Customer customer = getCustomer();
+        customer.setCart(cart);
+        CartRequest cr = new CartRequest();
+        cr.setUsername("cherry012");
+        cr.setPropertyID(1);
+        cr.setCheckinDate("14-12-2022");
+        cr.setCheckoutDate("12-12-2022");
+        RentalProperty property = new Villa();
+        property.setPrice_per_night(70f);
+        when(c.getDb().getCustomer(cr.getUsername())).thenReturn(customer);
+        when(c.getDb().checkProperty(cr.getPropertyID())).thenReturn("villa");
+        when(c.getDb().getProperty(cr.getPropertyID())).thenReturn(property);
+        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.addToCart(cr, "xxxxx"));
+        assertEquals("Invalid check-in date", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("AddToCart - Past checkin date add to cart")
+    void pastCheckinDatesAddToCart(){
+        Cart cart = getEmptyCart();
+        Customer customer = getCustomer();
+        customer.setCart(cart);
+        CartRequest cr = new CartRequest();
+        cr.setUsername("cherry012");
+        cr.setPropertyID(1);
+        cr.setCheckinDate("11-18-2022");
+        cr.setCheckoutDate("12-12-2022");
+        RentalProperty property = new Villa();
+        property.setPrice_per_night(70f);
+        when(c.getDb().getCustomer(cr.getUsername())).thenReturn(customer);
+        when(c.getDb().checkProperty(cr.getPropertyID())).thenReturn("villa");
+        when(c.getDb().getProperty(cr.getPropertyID())).thenReturn(property);
+        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.addToCart(cr, "xxxxx"));
+        assertEquals("Please select a future checkin date.", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("AddToCart - Past checkout date add to cart")
+    void pastCheckoutDatesAddToCart(){
+        Cart cart = getEmptyCart();
+        Customer customer = getCustomer();
+        customer.setCart(cart);
+        CartRequest cr = new CartRequest();
+        cr.setUsername("cherry012");
+        cr.setPropertyID(1);
+        cr.setCheckinDate("12-12-2022");
+        cr.setCheckoutDate("11-12-2022");
+        RentalProperty property = new Villa();
+        property.setPrice_per_night(70f);
+        when(c.getDb().getCustomer(cr.getUsername())).thenReturn(customer);
+        when(c.getDb().checkProperty(cr.getPropertyID())).thenReturn("villa");
+        when(c.getDb().getProperty(cr.getPropertyID())).thenReturn(property);
+        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.addToCart(cr, "xxxxx"));
+        assertEquals("Please select a future checkout date.", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("AddToCart - Invalid checkout date add to cart")
+    void invalidCheckoutDatesAddToCart(){
+        Cart cart = getEmptyCart();
+        Customer customer = getCustomer();
+        customer.setCart(cart);
+        CartRequest cr = new CartRequest();
+        cr.setUsername("cherry012");
+        cr.setPropertyID(1);
+        cr.setCheckinDate("12-12-2022");
+        cr.setCheckoutDate("14-12-2022");
+        RentalProperty property = new Villa();
+        when(c.getDb().getCustomer(cr.getUsername())).thenReturn(customer);
+        when(c.getDb().checkProperty(cr.getPropertyID())).thenReturn("villa");
+        when(c.getDb().getProperty(cr.getPropertyID())).thenReturn(getProperty(property));
+        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.addToCart(cr, "xxxxx"));
+        assertEquals("Invalid check-out date", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("AddToCart - Invalid property add to cart")
+    void invalidPropertyAddToCart(){
+        Cart cart = getEmptyCart();
+        Customer customer = getCustomer();
+        customer.setCart(cart);
+        CartRequest cr = new CartRequest();
+        cr.setUsername("cherry012");
+        cr.setPropertyID(1);
+        cr.setCheckinDate("12-12-2022");
+        cr.setCheckoutDate("12-15-2022");
+        when(c.getDb().getCustomer(cr.getUsername())).thenReturn(customer);
+        when(c.getDb().checkProperty(cr.getPropertyID())).thenReturn(null);
+        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.addToCart(cr, "xxxxx"));
+        assertEquals("Invalid property id : "+ cr.getPropertyID(), exception.getMessage());
+    }
+    @Test
+    @DisplayName("AddToCart - Successful add to cart")
+    void successfulAddToCart(){
+        Cart cart = getEmptyCart();
+        Customer customer = getCustomer();
+        customer.setCart(cart);
+        CartRequest cr = new CartRequest();
+        cr.setUsername("cherry012");
+        cr.setPropertyID(1);
+        cr.setCheckinDate("12-12-2022");
+        cr.setCheckoutDate("12-14-2022");
+        RentalProperty property = new Villa();
+        when(c.getDb().getCustomer(cr.getUsername())).thenReturn(customer);
+        when(c.getDb().checkProperty(cr.getPropertyID())).thenReturn("villa");
+        when(c.getDb().getProperty(cr.getPropertyID())).thenReturn(getProperty(property));
+        when(c.getDb().updateCart(customer)).thenReturn(1);
+        assertEquals("Added to cart successfully", c.addToCart(cr, "xxxxx"));
+    }
+
+    @Test
+    @DisplayName("ViewCart - Invalid user view cart")
+    void invalidUserViewCart(){
+        Cart cart = getEmptyCart();
+        Customer customer = getCustomer();
+        customer.setCart(cart);
+        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(null);
+        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.viewCart(customer.getUsername(), "xxxxx"));
+        assertEquals("Unauthorized or Invalid user", exception.getMessage());
+    }
+    @Test
+    @DisplayName("ViewCart - Invalid session view cart")
+    void invalidSessionViewCart(){
+        Cart cart = getEmptyCart();
+        Customer customer = getCustomer();
+        customer.setApiKey(null);
+        customer.setCart(cart);
+        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
+        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.viewCart(customer.getUsername(), "yyyyy"));
+        assertEquals("Unauthorized or Invalid user", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("ViewCart - Invalid API key view cart")
+    void invalidAPIKeyViewCart(){
+        Cart cart = getEmptyCart();
+        Customer customer = getCustomer();
+        customer.setCart(cart);
+        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
+        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.viewCart(customer.getUsername(), "yyyyy"));
+        assertEquals("Unauthorized or Invalid user", exception.getMessage());
+    }
+    @Test
+    @DisplayName("ViewCart - Successful view empty cart")
+    void successfulViewEmptyCart(){
+        Cart cart = getEmptyCart();
+        Customer customer = getCustomer();
+        customer.setCart(cart);
+        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
+        List<JSONObject> entities = new ArrayList<JSONObject>();
+        JSONObject price = new JSONObject();
+        price.put("Cart value", cart.getCartValue());
+        entities.add(price);
+
+        assertEquals(new ResponseEntity<Object>(entities, HttpStatus.OK), c.viewCart(customer.getUsername(),"xxxxx"));
+    }
+
+    @Test
+    @DisplayName("ViewCart - Successful view cart")
+    void successfulViewCart(){
+        Cart cart = getEmptyCart();
+        Customer customer = getCustomer();
+        customer.setCart(cart);
+        RentalProperty property = new Villa();
+        SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
+        try{
+            cart.addToCart(getProperty(property),sdf.parse("12-12-2022"), sdf.parse("12-15-2022"));
+        }
+        catch(Exception e){
+            System.out.println(e);
+        }
+        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
+
+
+        assertEquals(new ResponseEntity<Object>(getViewResponse(customer.getCart(), sdf), HttpStatus.OK), c.viewCart(customer.getUsername(),"xxxxx"));
+    }
+
+    @Test
+    @DisplayName("RemoveCart - Invalid user remove from cart")
+    void invalidUserDeleteCart(){
+        Cart cart = getEmptyCart();
+        Customer customer = getCustomer();
+        customer.setCart(cart);
+        CartRequest cr = getCartRequest();
+        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(null);
+        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.removeFromCart(cr, "xxxxx"));
+        assertEquals("Unauthorized or Invalid user", exception.getMessage());
+    }
+    @Test
+    @DisplayName("RemoveCart - Invalid session remove from cart")
+    void invalidSessionDeleteCart(){
+        Cart cart = getEmptyCart();
+        Customer customer = getCustomer();
+        customer.setApiKey(null);
+        customer.setCart(cart);
+        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
+        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.removeFromCart(getCartRequest(), "xxxxx"));
+        assertEquals("Unauthorized or Invalid user", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("RemoveCart - Invalid API key remove from cart")
+    void invalidAPIKeyDeleteCart(){
+        Cart cart = getEmptyCart();
+        Customer customer = getCustomer();
+        customer.setCart(cart);
+        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
+        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.removeFromCart(getCartRequest(), "yyyyy"));
+        assertEquals("Unauthorized or Invalid user", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("RemoveCart - Remove from cart when property does not exist/ empty cart")
+    void invalidPropertyDeleteCart(){
+        Cart cart = getEmptyCart();
+        Customer customer = getCustomer();
+        customer.setCart(cart);
+        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> c.removeFromCart(getCartRequest(), "xxxxx"));
+        assertEquals("Property does not exist in cart", exception.getMessage());
+    }
+    @Test
+    @DisplayName("RemoveCart - Remove from cart successfully")
+    void successfulDeleteCart(){
+        Cart cart = getEmptyCart();
+        Customer customer = getCustomer();
+        RentalProperty property = new Villa();
+        SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
+        try{
+            cart.addToCart(getProperty(property), sdf.parse("12-12-2022"), sdf.parse("12-14-2022"));
+        }
+        catch(Exception e){
+            System.out.println(e);
+        }
+        customer.setCart(cart);
+        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
+        when(c.getDb().updateCart(customer)).thenReturn(1);
+        assertEquals("Removed from cart successfully", c.removeFromCart(getCartRequest(), "xxxxx"));
+    }
+
+    @Test
+    @DisplayName("AddProperty - Host a Villa successfully")
     void hostPropertySuccessfully(){
         Customer user = getCustomer();
         RentalProperty property = new Villa();
         PropertyFactory factory = new FirstClassFactory();
 
-
         when(c.getDb().getCustomer(user.getUsername())).thenReturn(user);
-//        when(c.getProducer().getFactory("FirstClass")).thenReturn(factory);
-//        when(c.getFactory().getProperty("villa")).thenReturn(property);
-//        PropertyFactory factory1 = Mockito.spy(factory);
-//        Mockito.doReturn(property).when(factory1).getProperty("villa");
         when(c.getDb().getsetProperty("villa")).thenReturn(property);
         when(c.getDb().hostProperty(property)).thenReturn(1);
         assertEquals("Hosted property successfully.", c.hostProperty(hostPropertyRequest(), user.getUsername(), user.getApiKey()));
     }
 
     @Test
-    @DisplayName("Invalid User for hosting property")
+    @DisplayName("AddProperty - Invalid User for hosting property")
     void hostPropertyInvalidUser() {
         Customer user = getCustomer();
         when(c.getDb().getCustomer(user.getUsername())).thenReturn(null);
-        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> c.hostProperty(hostPropertyRequest(), user.getUsername(), user.getApiKey()));
-        assertEquals("Invalid user.", exception.getMessage());
+        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.hostProperty(hostPropertyRequest(), user.getUsername(), user.getApiKey()));
+        assertEquals("Unauthorized or Invalid user", exception.getMessage());
     }
 
     @Test
-    @DisplayName("Missing apikey for hosting property")
+    @DisplayName("AddProperty - Invalid session for hosting property")
     void hostPropertyMissingAPIKey() {
         Customer user = getCustomer();
         user.setApiKey(null);
         when(c.getDb().getCustomer(user.getUsername())).thenReturn(user);
         UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.hostProperty(hostPropertyRequest(), user.getUsername(), null));
-        assertEquals("Please login.", exception.getMessage());
+        assertEquals("Unauthorized or Invalid user", exception.getMessage());
     }
 
     @Test
-    @DisplayName("Invalid apikey for hosting property")
+    @DisplayName("AddProperty - Invalid apikey for hosting property")
     void hostPropertyInvalidAPIKey() {
         Customer user = getCustomer();
         user.setApiKey("abcd");
         when(c.getDb().getCustomer(user.getUsername())).thenReturn(user);
         UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.hostProperty(hostPropertyRequest(), user.getUsername(), "xyz"));
-        assertEquals("Unauthenticated - incorrect API Key.", exception.getMessage());
+        assertEquals("Unauthorized or Invalid user", exception.getMessage());
     }
-
     @Test
-    @DisplayName("Could not host property")
+    @DisplayName("AddProperty - Could not host property")
     void hostPropertyUnsuccessful(){
         Customer user = getCustomer();
         RentalProperty property = new Villa();
@@ -703,7 +632,7 @@ class ControllerTest {
     }
 
     @Test
-    @DisplayName("Invalid request for host property")
+    @DisplayName("AddProperty - Invalid request for host property")
     void hostPropertyInvalidRequest(){
         Customer user = getCustomer();
         RentalProperty property = new Villa();
@@ -723,32 +652,32 @@ class ControllerTest {
         return rp;
     }
     @Test
-    @DisplayName("Invalid User for rate property")
+    @DisplayName("Rate - Invalid User for rate property")
     void ratePropertyInvalidUser() {
         Customer user = getCustomer();
         when(c.getDb().getCustomer(user.getUsername())).thenReturn(null);
-        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> c.rateProperty(ratePropertyRequest(), user.getUsername(), user.getApiKey()));
-        assertEquals("Invalid user.", exception.getMessage());
+        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.rateProperty(ratePropertyRequest(), user.getUsername(), user.getApiKey()));
+        assertEquals("Unauthorized or Invalid user", exception.getMessage());
     }
 
     @Test
-    @DisplayName("Missing apikey for rate property")
+    @DisplayName("Rate - invalid session for rate property")
     void ratePropertyMissingAPIKey() {
         Customer user = getCustomer();
         user.setApiKey(null);
         when(c.getDb().getCustomer(user.getUsername())).thenReturn(user);
         UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.rateProperty(ratePropertyRequest(), user.getUsername(), null));
-        assertEquals("Please login.", exception.getMessage());
+        assertEquals("Unauthorized or Invalid user", exception.getMessage());
     }
 
     @Test
-    @DisplayName("Invalid apikey for rate property")
+    @DisplayName("Rate - Invalid apikey for rate property")
     void ratePropertyInvalidAPIKey() {
         Customer user = getCustomer();
         user.setApiKey("abcd");
         when(c.getDb().getCustomer(user.getUsername())).thenReturn(user);
         UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.rateProperty(ratePropertyRequest(), user.getUsername(), "xyz"));
-        assertEquals("Unauthenticated - incorrect API Key.", exception.getMessage());
+        assertEquals("Unauthorized or Invalid user", exception.getMessage());
     }
 
     ArrayList<Reservation> getReservations() throws ParseException {
@@ -783,7 +712,7 @@ class ControllerTest {
         return reservations;
     }
     @Test
-    @DisplayName("Invalid reservation for rate property")
+    @DisplayName("Rate - Invalid reservation for rate property")
     void ratePropertyInvalidReservationID() throws ParseException {
         Customer user = getCustomer();
         ArrayList<Reservation> reservations = getReservations();
@@ -794,7 +723,7 @@ class ControllerTest {
     }
 
     @Test
-    @DisplayName("Invalid reservation for user for rate property")
+    @DisplayName("Rate - Invalid reservation for user for rate property")
     void ratePropertyInvalidUserReservationID() throws ParseException {
         Customer user = getCustomer();
         ArrayList<Reservation> reservations = getInvalidUserReservation();
@@ -843,7 +772,7 @@ class ControllerTest {
         return property;
     }
     @Test
-    @DisplayName("Invalid property for rate property")
+    @DisplayName("Rate - Invalid property for rate property")
     void ratePropertyInvalidProperty() throws ParseException {
         Customer user = getCustomer();
         ArrayList<Reservation> reservations = getInvalidDateReservation();
@@ -856,7 +785,7 @@ class ControllerTest {
     }
 
     @Test
-    @DisplayName("Invalid date for rate property")
+    @DisplayName("Rate - cannot rate property before checkout date")
     void ratePropertyInvalidDate() throws ParseException {
         Customer user = getCustomer();
         ArrayList<Reservation> reservations = getInvalidDateReservation();
@@ -869,7 +798,7 @@ class ControllerTest {
     }
 
     @Test
-    @DisplayName("Successfully rate property")
+    @DisplayName("Rate - Successfully rate property")
     void ratePropertySuccess() throws ParseException {
         Customer user = getCustomer();
         ArrayList<Reservation> reservations = getReservations();
@@ -884,7 +813,7 @@ class ControllerTest {
     }
 
     @Test
-    @DisplayName("Could not rate property")
+    @DisplayName("Rate - Could not rate property")
     void ratePropertyNotSuccessful() throws ParseException {
         Customer user = getCustomer();
         ArrayList<Reservation> reservations = getReservations();
@@ -899,12 +828,9 @@ class ControllerTest {
         assertEquals("Could not rate property.", exception.getMessage());
     }
     @Test
-    @DisplayName("Generating invoice with no coupons")
+    @DisplayName("Invoice - Generating invoice with no coupons")
     void generateInvoiceWithNoCoupons() throws ParseException {
-        Customer customer = new Customer();
-        customer.setUsername("cherry012");
-        customer.setPassword("cher123");
-        customer.setApiKey("xxxxx");
+        Customer customer = getCustomer();
         customer.setUserID(1);
         Cart cart = new Cart();
         cart.setCartID(2);
@@ -921,12 +847,9 @@ class ControllerTest {
     }
 
     @Test
-    @DisplayName("Generating invoice with valid coupons")
+    @DisplayName("Invoice - Generating invoice with valid coupons")
     void generateInvoiceWithValidCoupons() throws ParseException {
-        Customer customer = new Customer();
-        customer.setUsername("cherry012");
-        customer.setPassword("cher123");
-        customer.setApiKey("xxxxx");
+        Customer customer = getCustomer();
         customer.setUserID(1);
         Cart cart = new Cart();
         cart.setCartID(2);
@@ -952,12 +875,9 @@ class ControllerTest {
     }
 
     @Test
-    @DisplayName("Generating invoice with invalid coupons")
+    @DisplayName("Invoice - Generating invoice with invalid coupons")
     void generateInvoiceWithInvalidCoupons() throws ParseException {
-        Customer customer = new Customer();
-        customer.setUsername("cherry012");
-        customer.setPassword("cher123");
-        customer.setApiKey("xxxxx");
+        Customer customer = getCustomer();
         customer.setUserID(1);
         Cart cart = new Cart();
         cart.setCartID(2);
@@ -984,12 +904,9 @@ class ControllerTest {
     }
 
     @Test
-    @DisplayName("Generating invoice with invalid coupons")
+    @DisplayName("Invoice - Generating invoice with duplicate coupons")
     void generateInvoiceWithRepeatedCoupons() throws ParseException {
-        Customer customer = new Customer();
-        customer.setUsername("cherry012");
-        customer.setPassword("cher123");
-        customer.setApiKey("xxxxx");
+        Customer customer = getCustomer();
         customer.setUserID(1);
         Cart cart = new Cart();
         cart.setCartID(2);
@@ -1015,12 +932,9 @@ class ControllerTest {
 
     }
     @Test
-    @DisplayName("Generating invoice with invalid coupons")
+    @DisplayName("Invoice - Generating invoice with empty cart")
     void generateInvoiceWithNothingInCart() throws ParseException {
-        Customer customer = new Customer();
-        customer.setUsername("cherry012");
-        customer.setPassword("cher123");
-        customer.setApiKey("xxxxx");
+        Customer customer = getCustomer();
         customer.setUserID(1);
         Cart cart = new Cart();
         cart.setCartID(2);
@@ -1029,16 +943,12 @@ class ControllerTest {
         when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
         ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> c.generateInvoice(null, "cherry012", "xxxxx"));
         assertEquals("User does not have any properties in cart", exception.getMessage());
-
     }
 
     @Test
-    @DisplayName("Generating invoice as unauthorized user")
+    @DisplayName("Invoice - Generating invoice as unauthorized user")
     void generateInvoiceAsUnauthorizedUser() throws ParseException {
-        Customer customer = new Customer();
-        customer.setUsername("cherry012");
-        customer.setPassword("cher123");
-        customer.setApiKey("xxxxx");
+        Customer customer = getCustomer();
         customer.setUserID(1);
         Cart cart = new Cart();
         cart.setCartID(2);
@@ -1051,12 +961,9 @@ class ControllerTest {
     }
 
     @Test
-    @DisplayName("Generating invoice with invalid API Key")
+    @DisplayName("Invoice - Generating invoice with invalid API Key")
     void generateInvoiceWithInvalidAPIKey() throws ParseException {
-        Customer customer = new Customer();
-        customer.setUsername("cherry012");
-        customer.setPassword("cher123");
-        customer.setApiKey("xxxxx");
+        Customer customer = getCustomer();
         customer.setUserID(1);
         Cart cart = new Cart();
         cart.setCartID(2);
@@ -1069,13 +976,9 @@ class ControllerTest {
     }
 
     @Test
-    @DisplayName("Get all past reservations that contain property of owner")
+    @DisplayName("OwnerReservation - Get all past reservations that contain property of owner")
     void getReservationsOfOwner() throws ParseException {
-        Customer owner = new Customer();
-
-        owner.setUsername("cherry012");
-        owner.setPassword("cher123");
-        owner.setApiKey("xxxxx");
+        Customer owner = getCustomer();
         owner.setUserID(2);
         ArrayList<Reservation> reservations = new ArrayList<>();
         Reservation res = new Reservation();
@@ -1098,12 +1001,9 @@ class ControllerTest {
     }
 
     @Test
-    @DisplayName("Get all past reservations of person who is not an owner")
+    @DisplayName("OwnerReservation - Get all past reservations of person who is not an owner")
     void getReservationsOfNonOwner() throws ParseException {
-        Customer owner = new Customer();
-        owner.setUsername("cherry012");
-        owner.setPassword("cher123");
-        owner.setApiKey("xxxxx");
+        Customer owner = getCustomer();
         owner.setUserID(3);
         ArrayList<Reservation> reservations = new ArrayList<>();
         Reservation res = new Reservation();
@@ -1122,19 +1022,125 @@ class ControllerTest {
         reservations.add(res);
         when(c.getDb().getCustomer(owner.getUsername())).thenReturn(owner);
         when(db.getReservations()).thenReturn(reservations);
-        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> c.getPastReservationofOwner("cherry012", "xxxxx"));
-        assertEquals("No reservations for this user's property or user does not have properties hosted", exception.getMessage());
+        ResponseEntity<Object> r = new ResponseEntity<>("No reservations for this user's property or user does not have properties hosted", HttpStatus.OK);
+        assertEquals(r, c.getPastReservationofOwner("cherry012", "xxxxx"));
     }
     @Test
-    @DisplayName("Get all past reservations of person who is invalid user")
+    @DisplayName("OwnerReservation - Get all past reservations of person who is invalid user")
     void getReservationOfInvalidUser() throws ParseException {
-        Customer owner = new Customer();
-        owner.setUsername("cherry012");
-        owner.setPassword("cher123");
-        owner.setApiKey("xxxxx");
+        Customer owner = getCustomer();
         owner.setUserID(3);
         UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.getPastReservationofOwner("cherry011", "xxxxx"));
         assertEquals("Unauthorized or Invalid user", exception.getMessage());
     }
 
+    @Test
+    @DisplayName("Reserve - success")
+    void reservedSuccessfully() throws ParseException {
+        Customer customer = getCustomer();
+        Cart cart = getEmptyCart();
+        customer.setCart(cart);
+
+        RentalProperty property = new Villa();
+        SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
+        try{
+            cart.addToCart(getProperty(property), sdf.parse("12-12-2022"), sdf.parse("12-14-2022"));
+        }
+        catch(Exception e){
+            System.out.println(e);
+        }
+        ArrayList<Reservation> reservations = getReservations();
+        ReservationRequest rr = new ReservationRequest();
+        rr.setUsername("cherry012");
+        rr.setCoupons(null);
+
+        when(c.getDb().getCustomer(rr.getUsername())).thenReturn(customer);
+        when(c.getDb().getReservations()).thenReturn(reservations);
+        when(c.getDb().makeReservation(reservations)).thenReturn(12);
+        when(c.getDb().updateCart(customer)).thenReturn(1);
+        assertTrue(c.createReservation(rr,customer.getApiKey()).contains("Reserved Successfully"));
+
+    }
+
+    @Test
+    @DisplayName("Reserve - invalid user")
+    void reserveInvalidUser() throws ParseException {
+        Customer customer = getCustomer();
+        customer.setUserID(1);
+        Cart cart = getEmptyCart();
+        customer.setCart(cart);
+
+        ReservationRequest rr = new ReservationRequest();
+        rr.setUsername("cherry012");
+        rr.setCoupons(null);
+
+        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(null);
+        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.createReservation(rr,customer.getApiKey()));
+        assertEquals("Unauthorized or Invalid user", exception.getMessage());
+    }
+    @Test
+    @DisplayName("Reserve - invalid session")
+    void reserveInvalidSession() throws ParseException {
+        Customer customer = getCustomer();
+        customer.setUserID(1);
+        customer.setApiKey(null);
+        Cart cart = getEmptyCart();
+        customer.setCart(cart);
+
+        ReservationRequest rr = new ReservationRequest();
+        rr.setUsername("cherry012");
+        rr.setCoupons(null);
+
+        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
+        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.createReservation(rr,customer.getApiKey()));
+        assertEquals("Unauthorized or Invalid user", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("Reserve - invalid api key")
+    void reserveInvalidApiKey() throws ParseException {
+        Customer customer = getCustomer();
+        customer.setUserID(1);
+        Cart cart = getEmptyCart();
+        customer.setCart(cart);
+
+        ReservationRequest rr = new ReservationRequest();
+        rr.setUsername("cherry012");
+        rr.setCoupons(null);
+
+        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
+        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.createReservation(rr,"yyyyy"));
+        assertEquals("Unauthorized or Invalid user", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("Reserve - invalid cart")
+    void reserveInvalidCart() throws ParseException {
+        Customer customer = getCustomer();
+        Cart cart = getEmptyCart();
+        customer.setCart(cart);
+
+        RentalProperty property = new Villa();
+        SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
+        try{
+            cart.addToCart(getProperty(property), sdf.parse("12-12-2022"), sdf.parse("12-14-2022"));
+        }
+        catch(Exception e){
+            System.out.println(e);
+        }
+        ArrayList<Reservation> reservations = getReservations();
+        reservations.get(0).setCheckinDate(sdf.parse("12-13-2022"));
+        reservations.get(0).setCheckoutDate(sdf.parse("12-15-2022"));
+        ReservationRequest rr = new ReservationRequest();
+        rr.setUsername("cherry012");
+        rr.setCoupons(null);
+
+        when(c.getDb().getCustomer(rr.getUsername())).thenReturn(customer);
+        when(c.getDb().getReservations()).thenReturn(reservations);
+        when(c.getDb().makeReservation(reservations)).thenReturn(12);
+        when(c.getDb().updateCart(customer)).thenReturn(1);
+        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.createReservation(rr,"xxxxx"));
+        assertEquals("One or more properties in the cart are unavailable.", exception.getMessage());
+
+    }
 }
