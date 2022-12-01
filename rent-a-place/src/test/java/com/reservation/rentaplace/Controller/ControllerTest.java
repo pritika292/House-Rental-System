@@ -7,6 +7,14 @@ import com.reservation.rentaplace.Domain.Factory.FirstClassFactory;
 import com.reservation.rentaplace.Domain.Factory.PropertyFactory;
 import com.reservation.rentaplace.Domain.Request.*;
 import com.reservation.rentaplace.Exception.*;
+import com.reservation.rentaplace.Domain.Command.Coupon;
+import com.reservation.rentaplace.Domain.Command.CouponList;
+import com.reservation.rentaplace.Domain.Request.CartRequest;
+import com.reservation.rentaplace.Domain.Request.CustomerRequest;
+import com.reservation.rentaplace.Exception.InvalidRequestException;
+import com.reservation.rentaplace.Exception.ResourceNotFoundException;
+import com.reservation.rentaplace.Exception.UnauthorizedException;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -17,25 +25,12 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
-import com.reservation.rentaplace.Domain.Request.CustomerRequest;
-import com.reservation.rentaplace.Exception.InvalidRequestException;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.springframework.jdbc.core.JdbcTemplate;
 
-import javax.swing.text.html.parser.Entity;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.when;
 
 class ControllerTest {
     @Mock
@@ -200,6 +195,7 @@ class ControllerTest {
         assertEquals("Logged out successfully.", c.logout(customer.getUsername(), "yyyyy"));
     }
 
+
     @Test
     @DisplayName("Invalid user for add to cart")
     void invalidUserAddToCart(){
@@ -237,6 +233,43 @@ class ControllerTest {
         UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.addToCart(cr, "xxxxx"));
         assertEquals("Unauthenticated - incorrect API Key.", exception.getMessage());
     }
+//    @Test
+//    @DisplayName("Invalid user for add to cart")
+//    void invalidUserAddToCart(){
+//        when(c.getDb().getCustomer("jerry012")).thenReturn(null);
+//        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> c.addToCart(new CartRequest(), "xxxxx"));
+//        assertEquals("Invalid user", exception.getMessage());
+//    }
+//
+//    @Test
+//    @DisplayName("Invalid session for add to cart")
+//    void invalidSessionAddToCart(){
+//        Customer customer = getCustomer();
+//        customer.setApiKey(null);
+//        CartRequest cr = new CartRequest();
+//        cr.setUsername("cherry012");
+//        cr.setPropertyID(1);
+//        cr.setCheckinDate("12-12-2022");
+//        cr.setCheckoutDate("14-12-2022");
+//        when(c.getDb().getCustomer(cr.getUsername())).thenReturn(customer);
+//        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.addToCart(cr, "xxxxx"));
+//        assertEquals("Please login", exception.getMessage());
+//    }
+//
+//    @Test
+//    @DisplayName("Invalid API Key for add to cart")
+//    void invalidAPIKeyAddToCart(){
+//        Customer customer = getCustomer();
+//        customer.setApiKey("yyyyy");
+//        CartRequest cr = new CartRequest();
+//        cr.setUsername("cherry012");
+//        cr.setPropertyID(1);
+//        cr.setCheckinDate("12-12-2022");
+//        cr.setCheckoutDate("14-12-2022");
+//        when(c.getDb().getCustomer(cr.getUsername())).thenReturn(customer);
+//        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.addToCart(cr, "xxxxx"));
+//        assertEquals("Unauthenticated - incorrect API Key.", exception.getMessage());
+//    }
 
     Cart getEmptyCart(){
         Cart cart = new Cart();
@@ -388,38 +421,38 @@ class ControllerTest {
         assertEquals("Added to cart successfully", c.addToCart(cr, "xxxxx"));
     }
 
-    @Test
-    @DisplayName("Invalid user view cart")
-    void invalidUserViewCart(){
-        Cart cart = getEmptyCart();
-        Customer customer = getCustomer();
-        customer.setCart(cart);
-        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(null);
-        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> c.viewCart(customer.getUsername(), "xxxxx"));
-        assertEquals("Invalid User", exception.getMessage());
-    }
-    @Test
-    @DisplayName("Invalid session view cart")
-    void invalidSessionViewCart(){
-        Cart cart = getEmptyCart();
-        Customer customer = getCustomer();
-        customer.setApiKey(null);
-        customer.setCart(cart);
-        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
-        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.viewCart(customer.getUsername(), "yyyyy"));
-        assertEquals("Please login", exception.getMessage());
-    }
-
-    @Test
-    @DisplayName("Invalid API key view cart")
-    void invalidAPIKeyViewCart(){
-        Cart cart = getEmptyCart();
-        Customer customer = getCustomer();
-        customer.setCart(cart);
-        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
-        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.viewCart(customer.getUsername(), "yyyyy"));
-        assertEquals("Unauthenticated - incorrect API Key.", exception.getMessage());
-    }
+//    @Test
+//    @DisplayName("Invalid user view cart")
+//    void invalidUserViewCart(){
+//        Cart cart = getEmptyCart();
+//        Customer customer = getCustomer();
+//        customer.setCart(cart);
+//        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(null);
+//        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> c.viewCart(customer.getUsername(), "xxxxx"));
+//        assertEquals("Invalid User", exception.getMessage());
+//    }
+//    @Test
+//    @DisplayName("Invalid session view cart")
+//    void invalidSessionViewCart(){
+//        Cart cart = getEmptyCart();
+//        Customer customer = getCustomer();
+//        customer.setApiKey(null);
+//        customer.setCart(cart);
+//        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
+//        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.viewCart(customer.getUsername(), "yyyyy"));
+//        assertEquals("Please login", exception.getMessage());
+//    }
+//
+//    @Test
+//    @DisplayName("Invalid API key view cart")
+//    void invalidAPIKeyViewCart(){
+//        Cart cart = getEmptyCart();
+//        Customer customer = getCustomer();
+//        customer.setCart(cart);
+//        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
+//        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.viewCart(customer.getUsername(), "yyyyy"));
+//        assertEquals("Unauthenticated - incorrect API Key.", exception.getMessage());
+//    }
     @Test
     @DisplayName("Successful view empty cart")
     void successfulViewEmptyCart(){
@@ -485,6 +518,7 @@ class ControllerTest {
         return property;
     }
 
+
     @Test
     @DisplayName("Invalid user remove from cart")
     void invalidUserDeleteCart(){
@@ -507,6 +541,28 @@ class ControllerTest {
         UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.removeFromCart(getCartRequest(), "xxxxx"));
         assertEquals("Please login", exception.getMessage());
     }
+//    @Test
+//    @DisplayName("Invalid user remove from cart")
+//    void invalidUserDeleteCart(){
+//        Cart cart = getEmptyCart();
+//        Customer customer = getCustomer();
+//        customer.setCart(cart);
+//        CartRequest cr = getCartRequest();
+//        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(null);
+//        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> c.removeFromCart(cr, "xxxxx"));
+//        assertEquals("Invalid user", exception.getMessage());
+//    }
+//    @Test
+//    @DisplayName("Invalid session remove from cart")
+//    void invalidSessionDeleteCart(){
+//        Cart cart = getEmptyCart();
+//        Customer customer = getCustomer();
+//        customer.setApiKey(null);
+//        customer.setCart(cart);
+//        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
+//        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.removeFromCart(getCartRequest(), "xxxxx"));
+//        assertEquals("Please login", exception.getMessage());
+//    }
 
     CartRequest getCartRequest(){
         CartRequest cr = new CartRequest();
@@ -516,16 +572,16 @@ class ControllerTest {
         cr.setCheckoutDate("12-14-2022");
         return cr;
     }
-    @Test
-    @DisplayName("Invalid API key remove from cart")
-    void invalidAPIKeyDeleteCart(){
-        Cart cart = getEmptyCart();
-        Customer customer = getCustomer();
-        customer.setCart(cart);
-        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
-        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.removeFromCart(getCartRequest(), "yyyyy"));
-        assertEquals("Unauthenticated - incorrect API Key.", exception.getMessage());
-    }
+//    @Test
+//    @DisplayName("Invalid API key remove from cart")
+//    void invalidAPIKeyDeleteCart(){
+//        Cart cart = getEmptyCart();
+//        Customer customer = getCustomer();
+//        customer.setCart(cart);
+//        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
+//        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.removeFromCart(getCartRequest(), "yyyyy"));
+//        assertEquals("Unauthenticated - incorrect API Key.", exception.getMessage());
+//    }
 
     @Test
     @DisplayName("Remove from cart when property does not exist/ empty cart")
@@ -842,4 +898,243 @@ class ControllerTest {
         RuntimeException exception = assertThrows(RuntimeException.class, () -> c.rateProperty(ratePropertyValidRequest(), user.getUsername(), user.getApiKey()));
         assertEquals("Could not rate property.", exception.getMessage());
     }
+    @Test
+    @DisplayName("Generating invoice with no coupons")
+    void generateInvoiceWithNoCoupons() throws ParseException {
+        Customer customer = new Customer();
+        customer.setUsername("cherry012");
+        customer.setPassword("cher123");
+        customer.setApiKey("xxxxx");
+        customer.setUserID(1);
+        Cart cart = new Cart();
+        cart.setCartID(2);
+        cart.setCartValue(50f);
+        RentalProperty property1 = new House();
+        property1.setPrice_per_night(50f);
+        ArrayList<RentalProperty> properties = new ArrayList<>();
+        properties.add(property1);
+        cart.setProperty(properties);
+        customer.setCart(cart);
+        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
+        assertEquals(56, (int) c.generateInvoice(null, "cherry012", "xxxxx"));
+
+    }
+
+    @Test
+    @DisplayName("Generating invoice with valid coupons")
+    void generateInvoiceWithValidCoupons() throws ParseException {
+        Customer customer = new Customer();
+        customer.setUsername("cherry012");
+        customer.setPassword("cher123");
+        customer.setApiKey("xxxxx");
+        customer.setUserID(1);
+        Cart cart = new Cart();
+        cart.setCartID(2);
+        cart.setCartValue(50f);
+        RentalProperty property1 = new House();
+        property1.setPrice_per_night(50f);
+        ArrayList<RentalProperty> properties = new ArrayList<>();
+        properties.add(property1);
+        cart.setProperty(properties);
+        customer.setCart(cart);
+        CouponList list = new CouponList();
+        Coupon c1 = new Coupon();
+        c1.setCouponCode("c1");
+        Coupon c2 = new Coupon();
+        c2.setCouponCode("c2");
+        List<Coupon> coupons = new ArrayList<>();
+        coupons.add(c1);
+        coupons.add(c2);
+        list.setCoupons(coupons);
+        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
+        assertEquals(47, (int) c.generateInvoice(list, "cherry012", "xxxxx"));
+
+    }
+
+    @Test
+    @DisplayName("Generating invoice with invalid coupons")
+    void generateInvoiceWithInvalidCoupons() throws ParseException {
+        Customer customer = new Customer();
+        customer.setUsername("cherry012");
+        customer.setPassword("cher123");
+        customer.setApiKey("xxxxx");
+        customer.setUserID(1);
+        Cart cart = new Cart();
+        cart.setCartID(2);
+        cart.setCartValue(50f);
+        RentalProperty property1 = new House();
+        property1.setPrice_per_night(50f);
+        ArrayList<RentalProperty> properties = new ArrayList<>();
+        properties.add(property1);
+        cart.setProperty(properties);
+        customer.setCart(cart);
+        CouponList list = new CouponList();
+        Coupon c1 = new Coupon();
+        c1.setCouponCode("c23232");
+        Coupon c2 = new Coupon();
+        c2.setCouponCode("c2");
+        List<Coupon> coupons = new ArrayList<>();
+        coupons.add(c1);
+        coupons.add(c2);
+        list.setCoupons(coupons);
+        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> c.generateInvoice(list, "cherry012", "xxxxx"));
+        assertEquals("Coupon not found", exception.getMessage());
+
+    }
+
+    @Test
+    @DisplayName("Generating invoice with invalid coupons")
+    void generateInvoiceWithRepeatedCoupons() throws ParseException {
+        Customer customer = new Customer();
+        customer.setUsername("cherry012");
+        customer.setPassword("cher123");
+        customer.setApiKey("xxxxx");
+        customer.setUserID(1);
+        Cart cart = new Cart();
+        cart.setCartID(2);
+        cart.setCartValue(50f);
+        RentalProperty property1 = new House();
+        property1.setPrice_per_night(50f);
+        ArrayList<RentalProperty> properties = new ArrayList<>();
+        properties.add(property1);
+        cart.setProperty(properties);
+        customer.setCart(cart);
+        CouponList list = new CouponList();
+        Coupon c1 = new Coupon();
+        c1.setCouponCode("c2");
+        Coupon c2 = new Coupon();
+        c2.setCouponCode("c2");
+        List<Coupon> coupons = new ArrayList<>();
+        coupons.add(c1);
+        coupons.add(c2);
+        list.setCoupons(coupons);
+        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
+        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.generateInvoice(list, "cherry012", "xxxxx"));
+        assertEquals("Coupon c2 already added", exception.getMessage());
+
+    }
+    @Test
+    @DisplayName("Generating invoice with invalid coupons")
+    void generateInvoiceWithNothingInCart() throws ParseException {
+        Customer customer = new Customer();
+        customer.setUsername("cherry012");
+        customer.setPassword("cher123");
+        customer.setApiKey("xxxxx");
+        customer.setUserID(1);
+        Cart cart = new Cart();
+        cart.setCartID(2);
+        cart.setCartValue(0f);
+        customer.setCart(cart);
+        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> c.generateInvoice(null, "cherry012", "xxxxx"));
+        assertEquals("User does not have any properties in cart", exception.getMessage());
+
+    }
+
+    @Test
+    @DisplayName("Generating invoice as unauthorized user")
+    void generateInvoiceAsUnauthorizedUser() throws ParseException {
+        Customer customer = new Customer();
+        customer.setUsername("cherry012");
+        customer.setPassword("cher123");
+        customer.setApiKey("xxxxx");
+        customer.setUserID(1);
+        Cart cart = new Cart();
+        cart.setCartID(2);
+        cart.setCartValue(0f);
+        customer.setCart(cart);
+        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
+        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.generateInvoice(null, "dfsf", "xxxxx"));
+        assertEquals("Unauthorized or Invalid user", exception.getMessage());
+
+    }
+
+    @Test
+    @DisplayName("Generating invoice with invalid API Key")
+    void generateInvoiceWithInvalidAPIKey() throws ParseException {
+        Customer customer = new Customer();
+        customer.setUsername("cherry012");
+        customer.setPassword("cher123");
+        customer.setApiKey("xxxxx");
+        customer.setUserID(1);
+        Cart cart = new Cart();
+        cart.setCartID(2);
+        cart.setCartValue(0f);
+        customer.setCart(cart);
+        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
+        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.generateInvoice(null, "dfsf", "yyyyyy"));
+        assertEquals("Unauthorized or Invalid user", exception.getMessage());
+
+    }
+
+    @Test
+    @DisplayName("Get all past reservations that contain property of owner")
+    void getReservationsOfOwner() throws ParseException {
+        Customer owner = new Customer();
+
+        owner.setUsername("cherry012");
+        owner.setPassword("cher123");
+        owner.setApiKey("xxxxx");
+        owner.setUserID(2);
+        ArrayList<Reservation> reservations = new ArrayList<>();
+        Reservation res = new Reservation();
+        RentalProperty property = new Villa();
+        property.setProperty_id(1);
+        property.setOwner_id(2);
+        res.setProperty(property);
+        res.setCheckinDate(new Date());
+        res.setCheckoutDate(new Date());
+        Customer customer = new Customer();
+        customer.setEmail("cherry@gmail.com");
+        customer.setPhone_number("999-999-999");
+        customer.setName("Cherry");
+        res.setCustomer(customer);
+        res.setConfirmationNumber(1);
+        reservations.add(res);
+        when(c.getDb().getCustomer(owner.getUsername())).thenReturn(owner);
+        when(db.getReservations()).thenReturn(reservations);
+        assertEquals(HttpStatus.OK, c.getPastReservationofOwner("cherry012", "xxxxx").getStatusCode());
+    }
+
+    @Test
+    @DisplayName("Get all past reservations of person who is not an owner")
+    void getReservationsOfNonOwner() throws ParseException {
+        Customer owner = new Customer();
+        owner.setUsername("cherry012");
+        owner.setPassword("cher123");
+        owner.setApiKey("xxxxx");
+        owner.setUserID(3);
+        ArrayList<Reservation> reservations = new ArrayList<>();
+        Reservation res = new Reservation();
+        RentalProperty property = new Villa();
+        property.setProperty_id(1);
+        property.setOwner_id(2);
+        res.setProperty(property);
+        res.setCheckinDate(new Date());
+        res.setCheckoutDate(new Date());
+        Customer customer = new Customer();
+        customer.setEmail("cherry@gmail.com");
+        customer.setPhone_number("999-999-999");
+        customer.setName("Cherry");
+        res.setCustomer(customer);
+        res.setConfirmationNumber(1);
+        reservations.add(res);
+        when(c.getDb().getCustomer(owner.getUsername())).thenReturn(owner);
+        when(db.getReservations()).thenReturn(reservations);
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> c.getPastReservationofOwner("cherry012", "xxxxx"));
+        assertEquals("No reservations for this user's property or user does not have properties hosted", exception.getMessage());
+    }
+    @Test
+    @DisplayName("Get all past reservations of person who is invalid user")
+    void getReservationOfInvalidUser() throws ParseException {
+        Customer owner = new Customer();
+        owner.setUsername("cherry012");
+        owner.setPassword("cher123");
+        owner.setApiKey("xxxxx");
+        owner.setUserID(3);
+        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.getPastReservationofOwner("cherry011", "xxxxx"));
+        assertEquals("Unauthorized or Invalid user", exception.getMessage());
+    }
+
 }
