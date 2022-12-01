@@ -590,6 +590,5 @@ public class Controller
             return "Thank you for your review!";
         else
             throw new RuntimeException("Could not rate property.");
-
     }
 }
