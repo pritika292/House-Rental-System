@@ -20,4 +20,5 @@ public class PropertyRow {
     private Float avg_rating;
     private Integer owner_id;
     private Integer availability;
+    private Integer number_of_reviews;
 }
