@@ -309,6 +309,10 @@ public class Controller
                 userReservations.add(groupedReservations.get(key));
             }
         }
+        if (userReservations.size() == 0)
+        {
+            return new ResponseEntity<Object>("User has no reservations", HttpStatus.OK);
+        }
         System.out.println(userReservations.size());
         List<JSONObject> entities = new ArrayList<>();
         SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
@@ -360,7 +364,6 @@ public class Controller
                 u1.setPropertyIds(properties);
                 u1.setConfirmationNumber(confNumber);
                 u1.setCustomer(r.getCustomer());
-                System.out.println(r.getInvoiceAmount() + " Invoice amount");
                 u1.setInvoice_amount(r.getInvoiceAmount());
                 userReservations.put(confNumber, u1);
             }
@@ -643,6 +646,7 @@ public class Controller
         property.setCarpet_area(hp.getCarpet_area());
         property.setAverage_rating(0f);
         property.setOwner_id(ownerID);
+        property.setNumber_of_reviews(0);
         property.setAvailability(hp.getAvailability());
 
         return property;
