@@ -50,6 +50,9 @@ public class InvoiceGenerator
             System.out.println(price);
         }
         addOns = new ArrayList<>();
+
+
+
         return price;
     }
 }

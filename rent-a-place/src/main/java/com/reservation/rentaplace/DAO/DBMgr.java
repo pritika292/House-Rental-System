@@ -198,6 +198,7 @@ public class DBMgr implements DBMgrDAO
                 r.setCheckinDate(sdf.parse(p.get(i).getCheckin_date()));
                 r.setCheckoutDate(sdf.parse(p.get(i).getCheckout_date()));
                 r.setProperty(property);
+                r.setInvoiceAmount(p.get(i).getInvoice_amount());
                 reservations.add(r);
             }
             return reservations;
@@ -355,6 +356,8 @@ public class DBMgr implements DBMgrDAO
         }
     }
 
+
+
     @Override
     public int createSession(Customer c, String key){
         int userID = c.getUserID();
@@ -369,7 +372,7 @@ public class DBMgr implements DBMgrDAO
         }
     }
     @Override
-    public int save(RentalProperty p) {
+    public int hostProperty(RentalProperty p) {
         try {
             return jdbcTemplate.update("INSERT INTO PROPERTY (price_per_night, num_of_bedrooms, num_of_bathrooms," +
                             " property_description, property_name, property_type, city, pet_friendly, wifi_avail, carpet_area," +
@@ -381,5 +384,49 @@ public class DBMgr implements DBMgrDAO
         catch (Exception e){
             return 0;
         }
+    }
+
+    public ArrayList<Reservation> getReservations(Integer reservationID){
+        ArrayList<Reservation> reservations = new ArrayList<Reservation>();
+        String query = "SELECT * from Reservation where reservation_id = ?";
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
+            List<ReservationRow> p = jdbcTemplate.query(query, new ReservationRowMapper(), reservationID);
+            for(int i=0;i<p.size();i++){
+                Reservation r = new Reservation();
+                Customer c = getCustomerByID(p.get(i).getCustomer_id());
+                RentalProperty property = getProperty(p.get(i).getProperty_id());
+                r.setConfirmationNumber((p.get(i).getReservation_id()));
+                r.setCustomer(c);
+                r.setCheckinDate(sdf.parse(p.get(i).getCheckin_date()));
+                r.setCheckoutDate(sdf.parse(p.get(i).getCheckout_date()));
+                r.setProperty(property);
+                reservations.add(r);
+            }
+            return reservations;
+        }
+        catch (Exception e){
+            System.out.println(e);
+            return null;
+        }
+    }
+
+    @Override
+    public Integer saveRating(Integer propertyID, double newRating, Integer numberOfReviews){
+        String query = "UPDATE Property set average_rating = ? number_of_reviews = ? WHERE property_id = ?";
+        try{
+            jdbcTemplate.update(query, new Object[] {newRating, propertyID, numberOfReviews});
+            return 1;
+        }
+        catch (Exception e){
+            System.out.println(e);
+            return 0;
+        }
+    }
+
+    public RentalProperty getsetProperty(String propertyType){
+        FactoryProducer producer = FactoryProducer.getInstance();
+        PropertyFactory factory = producer.getFactory(Constants.getPropertyClass().get(propertyType));
+        return factory.getProperty(propertyType);
     }
 }
