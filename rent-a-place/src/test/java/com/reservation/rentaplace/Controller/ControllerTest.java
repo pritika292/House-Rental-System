@@ -610,8 +610,8 @@ class ControllerTest {
         //Update with valid values
         SearchPropertyRequest searchPropertyRequest = new SearchPropertyRequest();
         searchPropertyRequest.setCity("dallas");
-        searchPropertyRequest.setCheckIn("12-01-2022");
-        searchPropertyRequest.setCheckOut("12-02-2022");
+        searchPropertyRequest.setCheckIn("12-15-2022");
+        searchPropertyRequest.setCheckOut("12-17-2022");
         searchPropertyRequest.setProperty_type(TEST_STRING);
         searchPropertyRequest.setAvailability(1);
         searchPropertyRequest.setCarpet_area(1000);
@@ -661,7 +661,7 @@ class ControllerTest {
         when(db.getCustomerByID(Mockito.anyInt())).thenReturn(customer);
 
         //calling original method
-        c.getProperty(searchPropertyRequest);
+        assertEquals(rentalPropertyList, c.getProperty(searchPropertyRequest));
 
     }
 
@@ -686,6 +686,7 @@ class ControllerTest {
         searchPropertyRequest.setCheckIn("2022-01-12");
         searchPropertyRequest.setCheckOut("2022-01-12");
         InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.getProperty(searchPropertyRequest));
+        assertEquals("Invalid Check-in or Check-out date", exception.getMessage());
     }
 
     @DisplayName("AddProperty - Host a Villa successfully")
