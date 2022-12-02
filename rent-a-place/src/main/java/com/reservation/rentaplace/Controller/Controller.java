@@ -104,14 +104,14 @@ public class Controller
             SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
             String result = validateInputDates(searchPropertyRequest.getCheckIn(), searchPropertyRequest.getCheckOut(), sdf);
 
-            if(result != null){
-                throw new InvalidRequestException("Invalid Check-in or Check-out date");
+            if((result != null) && (result.compareTo("Valid dates") != 0)) {
+                throw new InvalidRequestException(result);
             }
 
             //Get the list of properties based on city
             List<RentalProperty> propertiesList = db.getProperties(searchPropertyRequest);
 
-            if(propertiesList.size() == 0)
+            if(propertiesList == null || propertiesList.size() == 0)
             {
                 throw new Exception("City doesn't contain data and/or Invalid city");
             }
