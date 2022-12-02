@@ -31,7 +31,9 @@ public interface DBMgrDAO {
 
     public int createSession(Customer c, String key);
 
-    public int save(RentalProperty p);
+    public int hostProperty(RentalProperty p);
 
     public int makeReservation(ArrayList<Reservation> reservations);
-}
+
+    public Integer saveRating(Integer propertyID, double newRating, Integer numberOfReviews);
+    }
