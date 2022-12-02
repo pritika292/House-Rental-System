@@ -28,7 +28,7 @@ public class SearchRequestPropertyRowMapper implements RowMapper<RentalProperty>
         // Validation
         if(Constants.getPropertyClass().containsKey(propertyType)){
             FactoryProducer producer = FactoryProducer.getInstance();
-            PropertyFactory factory = producer.getFactory(Constants.getPropertyClass().get(propertyType));
+            PropertyFactory factory = producer.getFactory(Constants.getPropertyClass().get(propertyType.toLowerCase()));
             RentalProperty property = factory.getProperty(propertyType);
 
             property.setProperty_id(rs.getInt("property_id"));

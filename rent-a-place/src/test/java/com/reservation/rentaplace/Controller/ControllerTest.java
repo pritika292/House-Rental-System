@@ -1145,6 +1145,26 @@ class ControllerTest {
     }
 
     @Test
+    @DisplayName("OwnerReservation - Get all past reservations invalid session")
+    void getReservationOfInvalidSession() throws ParseException {
+        Customer owner = getCustomer();
+        owner.setApiKey(null);
+        owner.setUserID(3);
+        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.getPastReservationofOwner("cherry011", "xxxxx"));
+        assertEquals("Unauthorized or Invalid user", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("OwnerReservation - Get all past reservations invalid apikey")
+    void getReservationOfInvalidAPIkey() throws ParseException {
+        Customer owner = getCustomer();
+        owner.setApiKey("yyyyy");
+        owner.setUserID(3);
+        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.getPastReservationofOwner("cherry011", "xxxxx"));
+        assertEquals("Unauthorized or Invalid user", exception.getMessage());
+    }
+
+    @Test
     @DisplayName("Reserve - success")
     void reservedSuccessfully() throws ParseException {
         Customer customer = getCustomer();

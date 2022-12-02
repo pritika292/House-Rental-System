@@ -144,7 +144,7 @@ public class DBMgr implements DBMgrDAO
     public RentalProperty getProperty(Integer propertyID) {
         String propertyType = checkProperty(propertyID);
         FactoryProducer producer = FactoryProducer.getInstance();
-        PropertyFactory factory = producer.getFactory(Constants.getPropertyClass().get(propertyType));
+        PropertyFactory factory = producer.getFactory(Constants.getPropertyClass().get(propertyType.toLowerCase()));
         RentalProperty property = factory.getProperty(propertyType);
         String query = "SELECT * from Property where property_id = (?)";
         try{
@@ -426,7 +426,7 @@ public class DBMgr implements DBMgrDAO
 
     public RentalProperty getsetProperty(String propertyType){
         FactoryProducer producer = FactoryProducer.getInstance();
-        PropertyFactory factory = producer.getFactory(Constants.getPropertyClass().get(propertyType));
+        PropertyFactory factory = producer.getFactory(Constants.getPropertyClass().get(propertyType.toLowerCase()));
         return factory.getProperty(propertyType);
     }
 }

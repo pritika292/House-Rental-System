@@ -97,7 +97,6 @@ public class Controller
     }
 
     @PostMapping("/view")
-    public Object getProperty(@RequestBody SearchPropertyRequest searchPropertyRequest) throws ParseException {
     public Object getProperty(@RequestBody SearchPropertyRequest searchPropertyRequest) throws Exception {
         if(searchPropertyRequest.getCity()!=null && searchPropertyRequest.getCheckIn()!=null && searchPropertyRequest.getCheckOut()!=null) {
 
