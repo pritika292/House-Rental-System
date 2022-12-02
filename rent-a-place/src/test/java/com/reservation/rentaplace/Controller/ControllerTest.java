@@ -1143,4 +1143,81 @@ class ControllerTest {
         assertEquals("One or more properties in the cart are unavailable.", exception.getMessage());
 
     }
+
+    @Test
+    @DisplayName("Get reservations of valid renter")
+    void getReservationsOfRenter() throws ParseException {
+        Customer customer = getCustomer();
+        Cart cart = getEmptyCart();
+        customer.setCart(cart);
+        customer.setUserID(3);
+        ArrayList<Reservation> reservations = new ArrayList<>();
+        Reservation res = new Reservation();
+        RentalProperty property = new Villa();
+        property.setProperty_id(1);
+        property.setOwner_id(2);
+        res.setProperty(property);
+        res.setCheckinDate(new Date());
+        res.setCheckoutDate(new Date());
+        customer.setEmail("cherry@gmail.com");
+        customer.setPhone_number("999-999-999");
+        customer.setName("Cherry");
+        res.setCustomer(customer);
+        res.setConfirmationNumber(1);
+        reservations.add(res);
+        when(db.getReservations()).thenReturn(reservations);
+        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
+        assertEquals(true, c.getPastReservationforRenter("cherry012", "xxxxx").hasBody());
+
+    }
+
+    @Test
+    @DisplayName("Get no reservations of valid renter")
+    void getNoReservationsOfRenter() throws ParseException {
+        Customer customer = getCustomer();
+        Cart cart = getEmptyCart();
+        customer.setCart(cart);
+        customer.setUserID(3);
+        ArrayList<Reservation> reservations = new ArrayList<>();
+        Reservation res = new Reservation();
+        RentalProperty property = new Villa();
+        property.setProperty_id(1);
+        property.setOwner_id(2);
+        res.setProperty(property);
+        res.setCheckinDate(new Date());
+        res.setCheckoutDate(new Date());
+        res.setCustomer(customer);
+        res.setConfirmationNumber(1);
+        reservations.add(res);
+        when(db.getReservations()).thenReturn(reservations);
+        Customer newCustomer = new Customer();
+        newCustomer.setUserID(2);
+        newCustomer.setUsername("m11");
+        newCustomer.setPassword("m123");
+        newCustomer.setApiKey("yyyyy");
+        when(c.getDb().getCustomer("m11")).thenReturn(newCustomer);
+        ResponseEntity<Object> r = new ResponseEntity<>("User has no reservations", HttpStatus.OK);
+        assertEquals(r, c.getPastReservationforRenter("m11", "yyyyy"));
+
+    }
+
+    @Test
+    @DisplayName("Invalid user when getting reservations")
+    void getReservationsOfInvalidUser() throws ParseException {
+        Customer customer = getCustomer();
+        customer.setUserID(1);
+        Cart cart = getEmptyCart();
+        customer.setCart(cart);
+
+
+        when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
+        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.getPastReservationforRenter("cherry011","yyyyy"));
+        assertEquals("Unauthorized or Invalid user", exception.getMessage());
+
+    }
+
+
+
+
+
 }
