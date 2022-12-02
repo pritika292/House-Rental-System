@@ -24,13 +24,28 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import static org.junit.jupiter.api.Assertions.*;
+
+import com.reservation.rentaplace.Domain.Request.CustomerRequest;
+import com.reservation.rentaplace.Exception.InvalidRequestException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.jdbc.core.JdbcTemplate;
+
+import javax.swing.text.html.parser.Entity;
 import static org.mockito.Mockito.when;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.time.LocalDate;
+import java.time.Year;
+import java.util.*;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 class ControllerTest {
     @Mock
@@ -39,6 +54,9 @@ class ControllerTest {
     DBMgr db;
     @InjectMocks
     Controller c;
+
+    public static final String TEST_STRING = "abc";
+
     @BeforeEach
     void setUp() {
         c = new Controller();
@@ -579,6 +597,98 @@ class ControllerTest {
     }
 
     @Test
+    @DisplayName("ViewAndSearch Properties List")
+    void getPropertyTest() throws Exception {
+        //Set required fields for the Customer
+        Customer customer =  new Customer();
+        customer.setEmail("bhanu@gmail.com");
+        customer.setUsername("bhanu004");
+        customer.setPassword("qwerty");
+        customer.setName("bhanu");
+        customer.setUserID(1);
+
+        //Update with valid values
+        SearchPropertyRequest searchPropertyRequest = new SearchPropertyRequest();
+        searchPropertyRequest.setCity("dallas");
+        searchPropertyRequest.setCheckIn("12-15-2022");
+        searchPropertyRequest.setCheckOut("12-17-2022");
+        searchPropertyRequest.setProperty_type(TEST_STRING);
+        searchPropertyRequest.setAvailability(1);
+        searchPropertyRequest.setCarpet_area(1000);
+        searchPropertyRequest.setNum_baths(2);
+        searchPropertyRequest.setNum_bedrooms(2);
+        searchPropertyRequest.setWifi_avail(1);
+        searchPropertyRequest.setAverage_rating(2f);
+        searchPropertyRequest.setPrice_per_night(100f);
+        searchPropertyRequest.setPet_friendly(1);
+
+
+        //set few more required values
+        RentalProperty rentalProperty = new Villa();
+        rentalProperty.setCity("dallas");
+        rentalProperty.setProperty_id(1);
+        rentalProperty.setProperty_description("Irving Villa Description");
+        rentalProperty.setProperty_name("Irving Villa");
+        rentalProperty.setProperty_type("villa");
+        rentalProperty.setOwner_id(2);
+        rentalProperty.setAvailability(1);
+        rentalProperty.setProperty_type(TEST_STRING);
+        rentalProperty.setCarpet_area(1000);
+        rentalProperty.setProperty_description(TEST_STRING);
+        rentalProperty.setNum_baths(2);
+        rentalProperty.setNum_bedrooms(2);
+        rentalProperty.setPrice_per_night(100f);
+        rentalProperty.setAverage_rating(2f);
+        rentalProperty.setWifi_avail(1);
+        rentalProperty.setPet_friendly(1);
+
+        //set few more required values
+        Reservation reservation = new Reservation();
+        Date d = new Date();
+        reservation.setCustomer(customer);
+        reservation.setProperty(rentalProperty);
+        reservation.setCheckinDate(d);
+        reservation.setCheckoutDate(d);
+
+        List<RentalProperty> rentalPropertyList = new ArrayList<RentalProperty>();
+        ArrayList<Reservation> reservationsList = new ArrayList<Reservation>();
+
+        rentalPropertyList.add(rentalProperty);
+        reservationsList.add(reservation);
+
+        when(db.getProperties(searchPropertyRequest)).thenReturn(rentalPropertyList);
+        when(db.getReservations()).thenReturn(reservationsList);
+        when(db.getCustomerByID(Mockito.anyInt())).thenReturn(customer);
+
+        //calling original method
+        assertEquals(rentalPropertyList, c.getProperty(searchPropertyRequest));
+
+    }
+
+    @Test
+    @DisplayName("City value is null")
+    void invalidCityForViewProperty() throws Exception {
+        Reservation reservation = Mockito.mock(Reservation.class);
+        Customer customer = Mockito.mock(Customer.class);
+        //List<RentalProperty> list = Arrays.asList(rentalProperty);
+        SearchPropertyRequest searchPropertyRequest = new SearchPropertyRequest();
+        searchPropertyRequest.setCheckIn("11-30-2022");
+        searchPropertyRequest.setCheckOut("11-30-2022");
+        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.getProperty(searchPropertyRequest));
+        assertEquals("Missing input values", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("Date value is Invalid")
+    void invalidDateForViewProperty1() throws Exception {
+        SearchPropertyRequest searchPropertyRequest = new SearchPropertyRequest();
+        searchPropertyRequest.setCity("dallas");
+        searchPropertyRequest.setCheckIn("2022-01-12");
+        searchPropertyRequest.setCheckOut("2022-01-12");
+        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.getProperty(searchPropertyRequest));
+        assertEquals("Invalid Check-in or Check-out date", exception.getMessage());
+    }
+
     @DisplayName("AddProperty - Host a Villa successfully")
     void hostPropertySuccessfully(){
         Customer user = getCustomer();

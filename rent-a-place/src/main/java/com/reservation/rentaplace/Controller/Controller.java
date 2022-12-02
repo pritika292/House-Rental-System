@@ -98,6 +98,7 @@ public class Controller
 
     @PostMapping("/view")
     public Object getProperty(@RequestBody SearchPropertyRequest searchPropertyRequest) throws ParseException {
+    public Object getProperty(@RequestBody SearchPropertyRequest searchPropertyRequest) throws Exception {
         if(searchPropertyRequest.getCity()!=null && searchPropertyRequest.getCheckIn()!=null && searchPropertyRequest.getCheckOut()!=null) {
 
             //Validate the check-in and check-out date
@@ -105,11 +106,16 @@ public class Controller
             String result = validateInputDates(searchPropertyRequest.getCheckIn(), searchPropertyRequest.getCheckOut(), sdf);
 
             if(result != null){
-                throw new InvalidRequestException(result);
+                throw new InvalidRequestException("Invalid Check-in or Check-out date");
             }
 
             //Get the list of properties based on city
             List<RentalProperty> propertiesList = db.getProperties(searchPropertyRequest);
+
+            if(propertiesList.size() == 0)
+            {
+                throw new Exception("City doesn't contain data and/or Invalid city");
+            }
 
             //Get the reservations from reservation table
             List<Reservation> reservationsList = db.getReservations();
@@ -183,7 +189,7 @@ public class Controller
 
             return propertiesList;
         }
-        return "City or Check-In or Check-Out date is missing";
+        throw  new InvalidRequestException("Missing input values");
     }
 
     @PostMapping("/generateInvoice/{uname}/{apiKey}")
