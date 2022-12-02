@@ -597,7 +597,7 @@ class ControllerTest {
     }
 
     @Test
-    @DisplayName("ViewAndSearch Properties List")
+    @DisplayName("Search and Filter Properties - Properties")
     void getPropertyTest() throws Exception {
         //Set required fields for the Customer
         Customer customer =  new Customer();
@@ -666,7 +666,7 @@ class ControllerTest {
     }
 
     @Test
-    @DisplayName("City value is null")
+    @DisplayName("Search and Filter Properties - City value is null")
     void invalidCityForViewProperty() throws Exception {
         Reservation reservation = Mockito.mock(Reservation.class);
         Customer customer = Mockito.mock(Customer.class);
@@ -679,14 +679,75 @@ class ControllerTest {
     }
 
     @Test
-    @DisplayName("Date value is Invalid")
-    void invalidDateForViewProperty1() throws Exception {
+    @DisplayName("Search and Filer Properties - Check-In Date value is Invalid")
+    void invalidCheckinDateForViewProperty() throws Exception {
         SearchPropertyRequest searchPropertyRequest = new SearchPropertyRequest();
         searchPropertyRequest.setCity("dallas");
         searchPropertyRequest.setCheckIn("2022-01-12");
         searchPropertyRequest.setCheckOut("2022-01-12");
         InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.getProperty(searchPropertyRequest));
-        assertEquals("Invalid Check-in or Check-out date", exception.getMessage());
+        assertEquals("Invalid check-in date", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("Search and Filer Properties - Check-Out Date value is Invalid")
+    void invalidCheckoutDateForViewProperty() throws Exception {
+        SearchPropertyRequest searchPropertyRequest = new SearchPropertyRequest();
+        searchPropertyRequest.setCity("dallas");
+        searchPropertyRequest.setCheckIn("12-15-2022");
+        searchPropertyRequest.setCheckOut("2022-12-18");
+        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.getProperty(searchPropertyRequest));
+        assertEquals("Invalid check-out date", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("Search and Filer Properties - Selected Previous CheckIn Date value is Invalid")
+    void invalidPreviousCheckInDateForViewProperty() throws Exception {
+        SearchPropertyRequest searchPropertyRequest = new SearchPropertyRequest();
+        searchPropertyRequest.setCity("dallas");
+        searchPropertyRequest.setCheckIn("12-01-2022");
+        searchPropertyRequest.setCheckOut("12-02-2022");
+        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.getProperty(searchPropertyRequest));
+        assertEquals("Please select a future checkin date.", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("Search and Filer Properties - Selected Previous CheckOut Date value is Invalid")
+    void invalidPreviousCheckOutDateForViewProperty() throws Exception {
+        SearchPropertyRequest searchPropertyRequest = new SearchPropertyRequest();
+        searchPropertyRequest.setCity("dallas");
+        searchPropertyRequest.setCheckIn("12-15-2022");
+        searchPropertyRequest.setCheckOut("12-01-2022");
+        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.getProperty(searchPropertyRequest));
+        assertEquals("Please select a future checkout date.", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("Search and Filer Properties - Properties List is Null")
+    void propertiesListIsNull() throws Exception {
+        SearchPropertyRequest searchPropertyRequest = new SearchPropertyRequest();
+        searchPropertyRequest.setCity("dallas");
+        searchPropertyRequest.setCheckIn("12-15-2022");
+        searchPropertyRequest.setCheckOut("12-17-2022");
+
+        List<RentalProperty> propertiesList = null;
+
+        Exception exception = assertThrows(Exception.class, () -> c.getProperty(searchPropertyRequest));
+        assertEquals("City doesn't contain data and/or Invalid city", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("Search and Filer Properties - Properties List Size is Empty")
+    void propertiesListSizeIsEmpty() throws Exception {
+        SearchPropertyRequest searchPropertyRequest = new SearchPropertyRequest();
+        searchPropertyRequest.setCity("dallas");
+        searchPropertyRequest.setCheckIn("12-15-2022");
+        searchPropertyRequest.setCheckOut("12-17-2022");
+
+        List<RentalProperty> propertiesList = new ArrayList<>();
+
+        Exception exception = assertThrows(Exception.class, () -> c.getProperty(searchPropertyRequest));
+        assertEquals("City doesn't contain data and/or Invalid city", exception.getMessage());
     }
 
     @DisplayName("AddProperty - Host a Villa successfully")
