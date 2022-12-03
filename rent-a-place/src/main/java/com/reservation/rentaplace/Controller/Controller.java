@@ -324,9 +324,31 @@ public class Controller
             for (RentalProperty p: userReservations.get(i).getPropertyIds())
             {
                 JSONObject obj = new JSONObject();
-                obj.put("Property Info", p);
-                obj.put("Checkin Date", userReservations.get(i).getCheckinDate().get(index));
-                obj.put("Checkout Date", userReservations.get(i).getCheckoutDate().get(index));
+                JSONObject propertyDetails = new JSONObject();
+                propertyDetails.put("Property ID", p.getProperty_id());
+                propertyDetails.put("Price per night", p.getPrice_per_night());
+                propertyDetails.put("Number of bedrooms", p.getNum_bedrooms());
+                propertyDetails.put("Number of bathrooms", p.getNum_baths());
+                propertyDetails.put("Property description", p.getProperty_description());
+                propertyDetails.put("Property name", p.getProperty_name());
+                propertyDetails.put("Property type", p.getProperty_type());
+                propertyDetails.put("City",p.getCity());
+                propertyDetails.put("Carpet area", p.getCarpet_area());
+                String res = "No";
+                if(p.getPet_friendly() == 1)
+                    res = "Yes";
+                propertyDetails.put("Pet friendly", res);
+                res = "No";
+                if(p.getWifi_avail() == 1)
+                    res = "Yes";
+                propertyDetails.put("Wifi", res);
+                propertyDetails.put("Rating", p.getAverage_rating());
+                obj.put("Property information", propertyDetails);
+                //obj.put("Property Info", p);
+                String inDate = sdf.format(userReservations.get(i).getCheckinDate().get(index));
+                String outDate = sdf.format(userReservations.get(i).getCheckoutDate().get(index));
+                obj.put("Checkin Date", inDate);
+                obj.put("Checkout Date", outDate);
                 propertyObjects.add(obj);
                 index+=1;
             }
@@ -488,7 +510,27 @@ public class Controller
         List<JSONObject> entities = new ArrayList<JSONObject>();
         for (int i=0;i<cart.getProperty().size();i++) {
             JSONObject entity = new JSONObject();
-            entity.put("Property", cart.getProperty().get(i));
+            JSONObject propertyDetails = new JSONObject();
+            propertyDetails.put("Property ID", cart.getProperty().get(i).getProperty_id());
+            propertyDetails.put("Price per night", cart.getProperty().get(i).getPrice_per_night());
+            propertyDetails.put("Number of bedrooms", cart.getProperty().get(i).getNum_bedrooms());
+            propertyDetails.put("Number of bathrooms", cart.getProperty().get(i).getNum_baths());
+            propertyDetails.put("Property description", cart.getProperty().get(i).getProperty_description());
+            propertyDetails.put("Property name", cart.getProperty().get(i).getProperty_name());
+            propertyDetails.put("Property type", cart.getProperty().get(i).getProperty_type());
+            propertyDetails.put("City", cart.getProperty().get(i).getCity());
+            propertyDetails.put("Carpet area", cart.getProperty().get(i).getCarpet_area());
+            String res = "No";
+            if(cart.getProperty().get(i).getPet_friendly() == 1)
+                res = "Yes";
+            propertyDetails.put("Pet friendly", res);
+            res = "No";
+            if(cart.getProperty().get(i).getWifi_avail() == 1)
+                res = "Yes";
+            propertyDetails.put("Wifi", res);
+            propertyDetails.put("Rating", cart.getProperty().get(i).getAverage_rating());
+            //entity.put("Property", cart.getProperty().get(i));
+            entity.put("Property", propertyDetails);
             String inDate = sdf.format(cart.getCheckinDate().get(i));
             entity.put("Checkin date", inDate);
             String outDate = sdf.format(cart.getCheckoutDate().get(i));
@@ -685,9 +727,9 @@ public class Controller
             throw new InvalidRequestException("Too soon to rate property. Wait until check-out date");
 
         // form new rating and update in DB
-        double avgRating = property.getAverage_rating();
+        float avgRating = property.getAverage_rating();
         int numberOfReviews = property.getNumber_of_reviews();
-        double newAvgRating = (avgRating*numberOfReviews + rp.getRating())/(++numberOfReviews);
+        float newAvgRating = (avgRating*numberOfReviews + rp.getRating())/(++numberOfReviews);
         property.setAverage_rating(newAvgRating);
         property.setNumber_of_reviews(numberOfReviews);
 

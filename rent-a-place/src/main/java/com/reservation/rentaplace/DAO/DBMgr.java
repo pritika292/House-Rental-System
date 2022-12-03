@@ -284,7 +284,7 @@ public class DBMgr implements DBMgrDAO
             ArrayList<RentalProperty> property = new ArrayList<RentalProperty>();
             ArrayList<Date> checkinDate = new ArrayList<Date>();
             ArrayList<Date> checkoutDate = new ArrayList<Date>();
-            if(cartrow.getProperty_ids() !="" && cartrow.getCheckout_date() != null && cartrow.getCheckout_date()!=null){
+            if(!cartrow.getProperty_ids().equals("") && cartrow.getCheckout_date() != null && cartrow.getCheckout_date() != null){
                 property_ids = cartrow.getProperty_ids().split(",");
                 checkin_dates =  cartrow.getCheckin_date().split(",");
                 checkout_dates =  cartrow.getCheckout_date().split(",");

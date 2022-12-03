@@ -12,5 +12,5 @@ import lombok.Setter;
 public class RatePropertyRequest {
     private  Integer reservationID;
     private Integer propertyID;
-    private double rating;
+    private float rating;
 }
