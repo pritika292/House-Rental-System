@@ -8,7 +8,7 @@ public class Constants {
 
     public static HashMap<String, String> getPropertyClass(){
         propertyClass.put("villa", "FirstClass");
-        propertyClass.put("beachHouse", "FirstClass");
+        propertyClass.put("beachhouse", "FirstClass");
         propertyClass.put("resort", "FirstClass");
         propertyClass.put("apartment", "BusinessClass");
         propertyClass.put("house", "BusinessClass");
