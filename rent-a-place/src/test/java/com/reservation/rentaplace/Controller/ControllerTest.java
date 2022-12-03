@@ -945,6 +945,20 @@ class ControllerTest {
         rp.setReservationID(12);
         return rp;
     }
+    RatePropertyRequest ratePropertyInvalidRate(){
+        RatePropertyRequest rp = new RatePropertyRequest();
+        rp.setRating(10);
+        rp.setPropertyID(1);
+        rp.setReservationID(12);
+        return rp;
+    }
+    RatePropertyRequest ratePropertyNegativeRate(){
+        RatePropertyRequest rp = new RatePropertyRequest();
+        rp.setRating(-5);
+        rp.setPropertyID(1);
+        rp.setReservationID(12);
+        return rp;
+    }
     RentalProperty getPropertyVilla(RentalProperty property){
         property.setPrice_per_night(70f);
         property.setNum_bedrooms(3);
@@ -1001,6 +1015,35 @@ class ControllerTest {
         when(c.getDb().saveRating(ratePropertyValidRequest().getPropertyID(), 4.5, property.getNumber_of_reviews() + 1)).thenReturn(1);
         assertEquals("Thank you for your review!", c.rateProperty(ratePropertyValidRequest(), user.getUsername(), user.getApiKey()));
     }
+
+    @Test
+    @DisplayName("Rate - Rating lies beyond 5")
+    void ratePropertyInvalidRating() throws ParseException {
+        Customer user = getCustomer();
+        ArrayList<Reservation> reservations = getReservations();
+        RentalProperty property = getProperty(new Villa());
+        property.setAverage_rating(4.5f);
+        property.setNumber_of_reviews(10);
+        when(c.getDb().getCustomer(user.getUsername())).thenReturn(user);
+        when(c.getDb().getReservations(ratePropertyInvalidRate().getReservationID())).thenReturn(reservations);
+        when(c.getDb().getProperty(ratePropertyInvalidRate().getPropertyID())).thenReturn(property);
+        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.rateProperty(ratePropertyInvalidRate(), user.getUsername(), user.getApiKey()));
+        assertEquals("Rating must lie between 0 and 5.", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("Rate - Rating lies below 0")
+    void ratePropertyInvalidNegativeRating() throws ParseException {
+        Customer user = getCustomer();
+        ArrayList<Reservation> reservations = getReservations();
+        RentalProperty property = getProperty(new Villa());
+        property.setAverage_rating(4.5f);
+        property.setNumber_of_reviews(10);
+        when(c.getDb().getCustomer(user.getUsername())).thenReturn(user);
+        when(c.getDb().getReservations(ratePropertyNegativeRate().getReservationID())).thenReturn(reservations);
+        when(c.getDb().getProperty(ratePropertyNegativeRate().getPropertyID())).thenReturn(property);
+        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.rateProperty(ratePropertyNegativeRate(), user.getUsername(), user.getApiKey()));
+        assertEquals("Rating must lie between 0 and 5.", exception.getMessage());    }
 
     @Test
     @DisplayName("Rate - Could not rate property")
@@ -1353,4 +1396,76 @@ class ControllerTest {
         assertEquals("One or more properties in the cart are unavailable.", exception.getMessage());
 
     }
+    @Test
+
+@DisplayName("Get reservations of valid renter")
+void getReservationsOfRenter() throws ParseException {
+    Customer customer = getCustomer();
+    Cart cart = getEmptyCart();
+    customer.setCart(cart);
+    customer.setUserID(3);
+    ArrayList<Reservation> reservations = new ArrayList<>();
+    Reservation res = new Reservation();
+    RentalProperty property = new Villa();
+    property.setProperty_id(1);
+    property.setOwner_id(2);
+    res.setProperty(property);
+    res.setCheckinDate(new Date());
+    res.setCheckoutDate(new Date());
+    customer.setEmail("cherry@gmail.com");
+    customer.setPhone_number("999-999-999");
+    customer.setName("Cherry");
+    res.setCustomer(customer);
+    res.setConfirmationNumber(1);
+    reservations.add(res);
+    when(db.getReservations()).thenReturn(reservations);
+    when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
+    assertEquals(true, c.getPastReservationforRenter("cherry012", "xxxxx").hasBody());
+
+}
+
+@Test
+@DisplayName("Get no reservations of valid renter")
+void getNoReservationsOfRenter() throws ParseException {
+    Customer customer = getCustomer();
+    Cart cart = getEmptyCart();
+    customer.setCart(cart);
+    customer.setUserID(3);
+    ArrayList<Reservation> reservations = new ArrayList<>();
+    Reservation res = new Reservation();
+    RentalProperty property = new Villa();
+    property.setProperty_id(1);
+    property.setOwner_id(2);
+    res.setProperty(property);
+    res.setCheckinDate(new Date());
+    res.setCheckoutDate(new Date());
+    res.setCustomer(customer);
+    res.setConfirmationNumber(1);
+    reservations.add(res);
+    when(db.getReservations()).thenReturn(reservations);
+    Customer newCustomer = new Customer();
+    newCustomer.setUserID(2);
+    newCustomer.setUsername("m11");
+    newCustomer.setPassword("m123");
+    newCustomer.setApiKey("yyyyy");
+    when(c.getDb().getCustomer("m11")).thenReturn(newCustomer);
+    ResponseEntity<Object> r = new ResponseEntity<>("User has no reservations", HttpStatus.OK);
+    assertEquals(r, c.getPastReservationforRenter("m11", "yyyyy"));
+
+}
+
+@Test
+@DisplayName("Invalid user when getting reservations")
+void getReservationsOfInvalidUser() throws ParseException {
+    Customer customer = getCustomer();
+    customer.setUserID(1);
+    Cart cart = getEmptyCart();
+    customer.setCart(cart);
+
+
+    when(c.getDb().getCustomer(customer.getUsername())).thenReturn(customer);
+    UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> c.getPastReservationforRenter("cherry011","yyyyy"));
+    assertEquals("Unauthorized or Invalid user", exception.getMessage());
+
+}
 }

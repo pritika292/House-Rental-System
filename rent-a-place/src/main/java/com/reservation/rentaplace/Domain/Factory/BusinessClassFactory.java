@@ -11,9 +11,11 @@ public class BusinessClassFactory extends PropertyFactory {
         else if(property_type.equalsIgnoreCase("House")){
             return new House();
         }
-        else{
+        else if(property_type.equalsIgnoreCase("Studio")){
             return new Studio();
         }
+        else
+            return null;
     }
 
 }

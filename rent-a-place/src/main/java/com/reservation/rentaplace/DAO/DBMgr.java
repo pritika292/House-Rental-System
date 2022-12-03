@@ -414,7 +414,7 @@ public class DBMgr implements DBMgrDAO
 
     @Override
     public Integer saveRating(Integer propertyID, double newRating, Integer numberOfReviews){
-        String query = "UPDATE Property set average_rating = ? number_of_reviews = ? WHERE property_id = ?";
+        String query = "UPDATE Property set avg_rating = ? number_of_reviews = ? WHERE property_id = ?";
         try{
             jdbcTemplate.update(query, new Object[] {newRating, propertyID, numberOfReviews});
             return 1;

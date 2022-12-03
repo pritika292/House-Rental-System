@@ -726,16 +726,23 @@ public class Controller
         if (todaysDate.compareTo(checkOutDate) <1)
             throw new InvalidRequestException("Too soon to rate property. Wait until check-out date");
 
-        // form new rating and update in DB
-        float avgRating = property.getAverage_rating();
-        int numberOfReviews = property.getNumber_of_reviews();
-        float newAvgRating = (avgRating*numberOfReviews + rp.getRating())/(++numberOfReviews);
-        property.setAverage_rating(newAvgRating);
-        property.setNumber_of_reviews(numberOfReviews);
 
-        if(db.saveRating(property.getProperty_id(), newAvgRating, numberOfReviews) == 1)
-            return "Thank you for your review!";
+        // Verify if review lies between 0 and 5
+        double rate = rp.getRating();
+        if (0 <= rate && rate <= 5) {
+            // form new rating and update in DB
+            double avgRating = property.getAverage_rating();
+            int numberOfReviews = property.getNumber_of_reviews();
+            float newAvgRating = (float) ((avgRating * numberOfReviews + rate) / (++numberOfReviews));
+            property.setAverage_rating(newAvgRating);
+            property.setNumber_of_reviews(numberOfReviews);
+
+            if (db.saveRating(property.getProperty_id(), newAvgRating, numberOfReviews) == 1)
+                return "Thank you for your review!";
+            else
+                throw new RuntimeException("Could not rate property.");
+        }
         else
-            throw new RuntimeException("Could not rate property.");
+            throw new InvalidRequestException("Rating must lie between 0 and 5.");
     }
 }
