@@ -945,6 +945,20 @@ class ControllerTest {
         rp.setReservationID(12);
         return rp;
     }
+    RatePropertyRequest ratePropertyInvalidRate(){
+        RatePropertyRequest rp = new RatePropertyRequest();
+        rp.setRating(10);
+        rp.setPropertyID(1);
+        rp.setReservationID(12);
+        return rp;
+    }
+    RatePropertyRequest ratePropertyNegativeRate(){
+        RatePropertyRequest rp = new RatePropertyRequest();
+        rp.setRating(-5);
+        rp.setPropertyID(1);
+        rp.setReservationID(12);
+        return rp;
+    }
     RentalProperty getPropertyVilla(RentalProperty property){
         property.setPrice_per_night(70f);
         property.setNum_bedrooms(3);
@@ -1001,6 +1015,35 @@ class ControllerTest {
         when(c.getDb().saveRating(ratePropertyValidRequest().getPropertyID(), 4.5, property.getNumber_of_reviews() + 1)).thenReturn(1);
         assertEquals("Thank you for your review!", c.rateProperty(ratePropertyValidRequest(), user.getUsername(), user.getApiKey()));
     }
+
+    @Test
+    @DisplayName("Rate - Rating lies beyond 5")
+    void ratePropertyInvalidRating() throws ParseException {
+        Customer user = getCustomer();
+        ArrayList<Reservation> reservations = getReservations();
+        RentalProperty property = getProperty(new Villa());
+        property.setAverage_rating(4.5f);
+        property.setNumber_of_reviews(10);
+        when(c.getDb().getCustomer(user.getUsername())).thenReturn(user);
+        when(c.getDb().getReservations(ratePropertyInvalidRate().getReservationID())).thenReturn(reservations);
+        when(c.getDb().getProperty(ratePropertyInvalidRate().getPropertyID())).thenReturn(property);
+        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.rateProperty(ratePropertyInvalidRate(), user.getUsername(), user.getApiKey()));
+        assertEquals("Rating must lie between 0 and 5.", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("Rate - Rating lies below 0")
+    void ratePropertyInvalidNegativeRating() throws ParseException {
+        Customer user = getCustomer();
+        ArrayList<Reservation> reservations = getReservations();
+        RentalProperty property = getProperty(new Villa());
+        property.setAverage_rating(4.5f);
+        property.setNumber_of_reviews(10);
+        when(c.getDb().getCustomer(user.getUsername())).thenReturn(user);
+        when(c.getDb().getReservations(ratePropertyNegativeRate().getReservationID())).thenReturn(reservations);
+        when(c.getDb().getProperty(ratePropertyNegativeRate().getPropertyID())).thenReturn(property);
+        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> c.rateProperty(ratePropertyNegativeRate(), user.getUsername(), user.getApiKey()));
+        assertEquals("Rating must lie between 0 and 5.", exception.getMessage());    }
 
     @Test
     @DisplayName("Rate - Could not rate property")

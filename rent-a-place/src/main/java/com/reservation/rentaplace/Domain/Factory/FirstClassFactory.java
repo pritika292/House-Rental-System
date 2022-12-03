@@ -12,8 +12,9 @@ public class FirstClassFactory extends PropertyFactory {
         else if(property_type.equalsIgnoreCase("BeachHouse")){
             return new BeachHouse();
         }
-        else{
+        else if(property_type.equalsIgnoreCase("Resort")){
             return new Resort();
         }
+        else return null;
     }
 }

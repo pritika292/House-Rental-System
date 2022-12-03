@@ -17,8 +17,9 @@ public class FactoryProducer {
         } else if (factoryType.equalsIgnoreCase("BusinessClass")) {
             return new BusinessClassFactory();
         }
-        else{
+        else if (factoryType.equalsIgnoreCase("EconomyClass")){
             return new EconomyClassFactory();
         }
+        else return null;
     }
 }
