@@ -163,6 +163,7 @@ public class DBMgr implements DBMgrDAO
             property.setAverage_rating(p.getAvg_rating());
             property.setOwner_id(p.getOwner_id());
             property.setAvailability(p.getAvailability());
+            property.setNumber_of_reviews(p.getNumber_of_reviews());
             return property;
         }
         catch(Exception e){

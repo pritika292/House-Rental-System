@@ -45,6 +45,7 @@ public class SearchRequestPropertyRowMapper implements RowMapper<RentalProperty>
             property.setWifi_avail(rs.getInt("wifi_avail"));
             property.setOwner_id(rs.getInt("owner_id"));
             property.setAvailability(rs.getInt("availability"));
+            property.setNumber_of_reviews(rs.getInt("number_of_reviews"));
             return property;
         }
         return null;
