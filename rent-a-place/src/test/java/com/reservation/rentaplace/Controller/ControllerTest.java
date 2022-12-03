@@ -125,7 +125,26 @@ class ControllerTest {
     List<JSONObject> getViewResponse(Cart cart, SimpleDateFormat sdf){
         List<JSONObject> entities = new ArrayList<JSONObject>();
         JSONObject entity = new JSONObject();
-        entity.put("Property", cart.getProperty().get(0));
+        JSONObject propertyDetails = new JSONObject();
+        propertyDetails.put("Property ID", cart.getProperty().get(0).getProperty_id());
+        propertyDetails.put("Price per night", cart.getProperty().get(0).getPrice_per_night());
+        propertyDetails.put("Number of bedrooms", cart.getProperty().get(0).getNum_bedrooms());
+        propertyDetails.put("Number of bathrooms", cart.getProperty().get(0).getNum_baths());
+        propertyDetails.put("Property description", cart.getProperty().get(0).getProperty_description());
+        propertyDetails.put("Property name", cart.getProperty().get(0).getProperty_name());
+        propertyDetails.put("Property type", cart.getProperty().get(0).getProperty_type());
+        propertyDetails.put("City", cart.getProperty().get(0).getCity());
+        propertyDetails.put("Carpet area", cart.getProperty().get(0).getCarpet_area());
+        String res = "No";
+        if(cart.getProperty().get(0).getPet_friendly() == 1)
+            res = "Yes";
+        propertyDetails.put("Pet friendly", res);
+        res = "No";
+        if(cart.getProperty().get(0).getWifi_avail() == 1)
+            res = "Yes";
+        propertyDetails.put("Wifi", res);
+        propertyDetails.put("Rating", cart.getProperty().get(0).getAverage_rating());
+        entity.put("Property", propertyDetails);
         String inDate = sdf.format(cart.getCheckinDate().get(0));
         entity.put("Checkin date", inDate);
         String outDate = sdf.format(cart.getCheckoutDate().get(0));
@@ -817,7 +836,7 @@ class ControllerTest {
     }
     RatePropertyRequest ratePropertyRequest(){
         RatePropertyRequest rp = new RatePropertyRequest();
-        rp.setRating(4.5);
+        rp.setRating(4.5f);
         rp.setPropertyID(4);
         rp.setReservationID(12);
         return rp;
@@ -921,7 +940,7 @@ class ControllerTest {
 
     RatePropertyRequest ratePropertyValidRequest(){
         RatePropertyRequest rp = new RatePropertyRequest();
-        rp.setRating(4.5);
+        rp.setRating(4.5f);
         rp.setPropertyID(1);
         rp.setReservationID(12);
         return rp;
@@ -939,7 +958,7 @@ class ControllerTest {
         property.setPet_friendly(1);
         property.setWifi_avail(1);
         property.setCarpet_area(1500);
-        property.setAverage_rating(4.5);
+        property.setAverage_rating(4.5f);
         return property;
     }
     @Test
@@ -974,7 +993,7 @@ class ControllerTest {
         Customer user = getCustomer();
         ArrayList<Reservation> reservations = getReservations();
         RentalProperty property = getProperty(new Villa());
-        property.setAverage_rating(4.5);
+        property.setAverage_rating(4.5f);
         property.setNumber_of_reviews(10);
         when(c.getDb().getCustomer(user.getUsername())).thenReturn(user);
         when(c.getDb().getReservations(ratePropertyValidRequest().getReservationID())).thenReturn(reservations);
